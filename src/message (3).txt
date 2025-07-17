@@ -1,0 +1,240 @@
+#include "raylib.h"
+#include <stdbool.h>
+#include <stdio.h>
+
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 450
+#define GRAVITY 0.5f
+#define JUMP_FORCE -12.0f
+#define PLAYER_SPEED 5.0f
+#define MAX_PLATFORMS 6
+#define TOTAL_TIME 120.0f // seconds (2min game timer)
+
+
+
+typedef struct Player {
+    Rectangle rect;
+    float velocityY;
+    bool isJumping;
+    bool isAlive;
+} Player;
+
+int main() {
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Platformer with Camera + Timer");
+
+    Player player = {
+        .rect = {100, 300, 20, 20},
+        .velocityY = 0,
+        .isJumping = false,
+        .isAlive = true
+    };
+
+    Rectangle platforms[MAX_PLATFORMS] = {
+        {100, 345, 100, 80},
+        {200, 280, 120, 180},
+        {500, 280, 100, 80},
+        {800, 200, 140, 80},
+        {-50,-50,50,120},
+        {200,0,200,180}
+    };
+
+    //setting up camera /sr
+    Camera2D camera = {0};
+    camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+    camera.target = (Vector2){player.rect.x + player.rect.width / 2, player.rect.y + player.rect.height / 2};
+    camera.zoom = 1.0f;
+
+    //timer /sr
+    float timer = TOTAL_TIME; // in seconds
+
+    SetTargetFPS(60);
+
+    //main game loop 
+    while (!WindowShouldClose()) {
+        float delta = GetFrameTime();
+
+        //active game loop
+        if (player.isAlive && timer > 0) {
+
+
+            // Update timer
+            timer -= delta;
+            if (timer <= 0) {
+                timer = 0;
+                player.isAlive = false;
+            }
+
+
+            // Movement with A and D
+            if (IsKeyDown(KEY_A)) player.rect.x -= PLAYER_SPEED;    //subtract speed from x coordinate
+            if (IsKeyDown(KEY_D)) player.rect.x += PLAYER_SPEED;    //add speed to x coordinate
+
+            // // Jump with W
+            // if (IsKeyPressed(KEY_W) && !player.isJumping) {
+            //     player.velocityY = JUMP_FORCE;
+            //     player.isJumping = true;
+            // }
+
+            
+
+            // Detect collisions for jump
+            bool onLeftWall = false;    //touching left side of wall
+            bool onRightWall = false;   //touching right side of wall
+            bool onPlatform = false;    //standing on platform
+
+            for (int i = 0; i < MAX_PLATFORMS; i++) {
+                Rectangle plat = platforms[i];  //check each platform one by one
+
+                
+                if (CheckCollisionRecs(player.rect, plat)) {
+                    if (player.rect.x + player.rect.width > plat.x &&
+                        player.rect.x < plat.x &&
+                        player.rect.y + player.rect.height > plat.y &&
+                        player.rect.y < plat.y + plat.height) {
+                            onRightWall = true;         // Check collision with right side of platform
+                    }
+
+                    if (player.rect.x < plat.x + plat.width &&
+                        player.rect.x + player.rect.width > plat.x + plat.width &&
+                        player.rect.y + player.rect.height > plat.y &&
+                        player.rect.y < plat.y + plat.height) {
+                            onLeftWall = true;          // Check collision with left side of platform
+                    }
+
+                     
+                    // Calculate how much the player overlaps the platform
+                    float overlapLeft = (player.rect.x + player.rect.width) - plat.x;
+                    float overlapRight = (plat.x + plat.width) - player.rect.x;
+                    float overlapTop = (player.rect.y + player.rect.height) - plat.y;
+                    float overlapBottom = (plat.y + plat.height) - player.rect.y;
+
+                    // Find smallest overlap to determine collision direction
+                    float minOverlapX = (overlapLeft < overlapRight) ? overlapLeft : overlapRight;
+                    float minOverlapY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;
+
+                    if (minOverlapX < minOverlapY) {            // Horizontal collision
+                        
+                        if (overlapLeft < overlapRight) {       //collision from left side
+                            player.rect.x -= overlapLeft;       //move player position to negate overlap
+                            
+                        }
+                        else {                                  //collision from right side
+                            player.rect.x += overlapRight;
+                        }
+            
+                        
+                    }
+                    else {                                      // Vertical collision
+                        if (overlapTop < overlapBottom) {       // Collided with top of platform
+                            player.rect.y -= overlapTop;
+                            player.velocityY = 0;
+                            player.isJumping = false;
+                            onPlatform = true;
+                        }
+                        else {                                  // Collided with bottom of platform
+                            player.rect.y += overlapBottom;
+                            player.velocityY = 0;
+                        }
+                    }
+                }
+            }
+
+            
+            if (!onPlatform) player.isJumping = true;           // If not on a platform, player is jumping
+            
+            // Jump with W
+            if (IsKeyPressed(KEY_W)) {
+                if (!player.isJumping && onPlatform) {          //Normal Jump
+                    player.velocityY = JUMP_FORCE;
+                    player.isJumping = true;
+                }
+                else if (onLeftWall || onRightWall) {           // Wall jump
+                    player.velocityY = JUMP_FORCE;
+                    player.isJumping = true;
+
+                    // Add horizontal push-off from wall
+                    if (onLeftWall) player.rect.x += 25.0f;  // push right
+                    if (onRightWall) player.rect.x -= 25.0f; // push left
+                }
+            }
+
+            // Apply gravity
+            player.velocityY += GRAVITY;
+            player.rect.y += player.velocityY;
+
+            // Check fall out of screen
+            if (player.rect.y > SCREEN_HEIGHT + 300) {
+                player.isAlive = false;
+            }
+
+            // Update camera to follow player
+            camera.target = (Vector2){
+                player.rect.x + player.rect.width / 2,
+                player.rect.y + player.rect.height / 2
+            };
+
+        
+        
+        }
+
+
+        // Restart logic (outside the game loop)
+        if (!player.isAlive || timer <= 0) {
+            if (IsKeyPressed(KEY_R)) {
+                // Reset player
+                player.rect.x = 100;
+                player.rect.y = 300;
+                player.velocityY = 0;
+                player.isJumping = false;
+                player.isAlive = true;
+
+                // Reset timer
+                timer = TOTAL_TIME;
+
+                // Reset camera target
+                camera.target = (Vector2){player.rect.x + player.rect.width / 2, player.rect.y + player.rect.height / 2};
+            }
+        }
+
+        // Drawing
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+
+        BeginMode2D(camera);
+
+        // Draw platforms
+        for (int i = 0; i < MAX_PLATFORMS; i++) {
+            DrawRectangleRec(platforms[i], DARKGRAY);
+        }
+
+        // Draw player (blue if alive, red if dead)
+        DrawRectangleRec(player.rect, player.isAlive ? BLUE : RED);
+
+        EndMode2D();
+
+        // Draw timer
+        char timeStr[20];
+        int seconds = (int)timer;
+        sprintf(timeStr, "%02d:%02d", seconds / 60, seconds % 60);
+        // Draw timer centered at the top
+        int fontSize = 24;
+        int textWidth = MeasureText(timeStr, fontSize);
+        int x = (SCREEN_WIDTH - textWidth) / 2;
+        int y = 10; // small padding from top
+
+        DrawText(timeStr, x, y, fontSize, (timer <= 10) ? RED : BLACK);
+
+
+        // Game over message
+        if (!player.isAlive) {
+            DrawText("GAME OVER", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 20, 40, RED);
+            DrawText("Press R to Restart", SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT / 2 + 30, 20, DARKGRAY);
+        }
+
+        EndDrawing();
+
+    }
+    CloseWindow();
+    return 0;
+}
+
