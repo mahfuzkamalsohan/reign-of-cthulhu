@@ -10,7 +10,11 @@
 #define JUMP_FORCE -12.0f
 #define PLAYER_SPEED 5.0f
 #define MAX_PLATFORMS 6
+#define DOUBLE_JUMPS 2
+#define DASHES 2
 #define TOTAL_TIME 120.0f // seconds (2min game timer)
+#define DASH_DISTANCE 200.0f
+
 
 typedef enum AnimationType { LOOP = 1, ONESHOT = 2 } AnimationType;
 typedef enum Direction { LEFT = -1, RIGHT = 1 } Direction;
@@ -20,7 +24,7 @@ typedef struct Animation {
     int first_frame;
     int last_frame;
     int current_frame;
-    const float speed;
+    float speed;
     float duration_left;
     int row;
     AnimationType type;
@@ -30,8 +34,23 @@ typedef struct Player {
     Rectangle rect;
     float velocityY;
     bool isJumping;
+    bool isDashing;
     bool isAlive;
+    int health;
+
+    int doubleJumpCount;
+    int dashCount;
 } Player;
+
+typedef struct PowUpDjump {
+    Rectangle rect;
+    bool isCollected;
+} PowUpDjump;
+
+typedef struct PowUpDash {
+    Rectangle rect;
+    bool isCollected;
+} PowUpDash;
 
 void animation_update(Animation* self) {
     self->duration_left -= GetFrameTime();
@@ -47,8 +66,6 @@ void animation_update(Animation* self) {
             case ONESHOT:
                 if (self->current_frame < self->last_frame)
                     self->current_frame += 1;
-                // Do NOT advance past last_frame
-                // else: stay on last_frame
                 break;
         }
     }
@@ -63,11 +80,15 @@ Rectangle animation_frame(Animation* self, int max_frames, int num_rows, Texture
 }
 
 void select_player_animation(bool moving, bool jumping, Animation* anim) {
+    int prev_row = anim->row;
+    AnimationType prev_type = anim->type;
+
     if (jumping) {
-        anim->row = 4;
         anim->first_frame = 0;
+        anim->row = 4;
         anim->last_frame = 3;
         anim->type = LOOP;
+        
     } else if (moving) {
         anim->row = 1;
         anim->first_frame = 0;
@@ -79,6 +100,41 @@ void select_player_animation(bool moving, bool jumping, Animation* anim) {
         anim->last_frame = 7;
         anim->type = LOOP;
     }
+
+    // Reset current_frame if animation row or type changed
+    if (anim->row != prev_row || anim->type != prev_type) {
+        anim->current_frame = 0;
+        anim->duration_left = anim->speed;
+    }
+}
+
+void death_animation(Animation* anim) {
+    anim->row = 7;
+    anim->first_frame = 0;
+    anim->last_frame = 13;
+    anim->current_frame = 0;
+    anim->type = ONESHOT;
+    anim->duration_left = anim->speed;
+}
+
+void idle_animation(Animation* anim) {
+    
+    anim->row = 0;
+    anim->first_frame = 0;
+    anim->last_frame = 7;
+    anim->current_frame = 0;
+    anim->type = LOOP;
+    anim->duration_left = anim->speed;
+    
+}
+
+void hit_animation(Animation* anim) {
+    anim->row = 6;
+    anim->first_frame = 1;
+    anim->last_frame = 1;
+    anim->current_frame = 1;
+    anim->type = ONESHOT;
+    anim->duration_left = anim->speed;
 }
 
 int main() {
@@ -103,22 +159,50 @@ int main() {
         .type = LOOP
     };
 
+//======================================Player Initialization=================================//
+
     Player player = {
-        // Set initial position (x=100, y=300), width and height based on sprite frame size
-        .rect = {100, 300, PLAYER_DRAW_SIZE/2, PLAYER_DRAW_SIZE/2},
+        //player collision box x, y, width, height
+        .rect = {100,300, PLAYER_DRAW_SIZE/4, PLAYER_DRAW_SIZE/2},
         .velocityY = 0,
         .isJumping = false,
-        .isAlive = true
+        .isDashing = false,
+        .isAlive = true,
+        .health = 3,
+
+        .doubleJumpCount = 0,
+        .dashCount = 0
     };
 
+   //======================================Level Layout=========================================//
+
+    //add platforms
     Rectangle platforms[MAX_PLATFORMS] = {
         {100, 345, 100, 80},
         {200, 280, 120, 180},
         {500, 280, 100, 80},
         {800, 200, 140, 80},
-        {-50, -50, 50, 120},
-        {200, 0, 200, 180}
+        {-50,-50,50,120},
+        {200,0,200,180}
     };
+
+    //temporary damage block
+    Rectangle damageBlock = { 300, 200, 50, 50 }; 
+
+
+
+
+    //add power ups
+    PowUpDjump Djumps[DOUBLE_JUMPS] = {
+    //    { {100, 0, 20, 20}, false },
+       { {100,40,20,20}, false }
+    };
+
+    PowUpDash Dashes[DASHES] = {
+        { {300,-40,20,20}, false }
+    };
+
+//====================================Camera Setting========================================//
 
     // Setting up camera
     Camera2D camera = {0};
@@ -130,86 +214,118 @@ int main() {
     LightState light = GREEN_LIGHT;
     double state_start_time = GetTime();
     Vector2 last_pos = {player.rect.x, player.rect.y};
-    bool is_dead = false;
+    
+    // Add at the top of main(), after Animation player_anim = {...};
+    int last_anim_row = -1;
+
+//===================================main game loop=======================================//
 
     SetTargetFPS(60);
 
     while (!WindowShouldClose()) {
+
         float dt = GetFrameTime();
         double elapsed = GetTime() - state_start_time;
+        if (player.isAlive) {
 
-        // Light state logic
-        if (light == GREEN_LIGHT && elapsed >= 10.0) {
-            light = RED_LIGHT;
-            state_start_time = GetTime();
-            last_pos.x = player.rect.x;
-            last_pos.y = player.rect.y;
-        } else if (light == RED_LIGHT && elapsed >= 2.0) {
-            light = GREEN_LIGHT;
-            state_start_time = GetTime();
-            // is_dead = false; // Player stays dead after red light ends
-        }
+            // Light state logic
+            if (light == GREEN_LIGHT && elapsed >= 10.0) {
+                light = RED_LIGHT;
+                state_start_time = GetTime();
+            } else if (light == RED_LIGHT && elapsed >= 1.0) {
+                light = GREEN_LIGHT;
+                state_start_time = GetTime();   
+            }
 
-        bool moving = false;
+            bool moving = false;  // Track if player is moving for animation
 
-        // Always apply gravity and update position
-        player.velocityY += GRAVITY;
-        player.rect.y += player.velocityY;
+            //=================================Power Up Section===================================//
 
-        // --- Always run collision detection ---
-        bool onLeftWall = false;
-        bool onRightWall = false;
-        bool onPlatform = false;
+            //check if double jump powerup collected
+            for (int i = 0; i < DOUBLE_JUMPS; i++) {
+                if (CheckCollisionRecs(player.rect, Djumps[i].rect) && Djumps[i].isCollected == false) {
+                    Djumps[i].isCollected = true;
+                    (player.doubleJumpCount)++;
+                }
+            }
 
-        for (int i = 0; i < MAX_PLATFORMS; i++) {
-            Rectangle plat = platforms[i];
-            if (CheckCollisionRecs(player.rect, plat)) {
-                float overlapLeft = (player.rect.x + player.rect.width) - plat.x;
-                float overlapRight = (plat.x + plat.width) - player.rect.x;
-                float overlapTop = (player.rect.y + player.rect.height) - plat.y;
-                float overlapBottom = (plat.y + plat.height) - player.rect.y;
+            //check if dash powerup collected
+            for (int i = 0; i < DASHES; i++) {
+                if (CheckCollisionRecs(player.rect, Dashes[i].rect) && Dashes[i].isCollected == false) {
+                    Dashes[i].isCollected = true;
+                    (player.dashCount)++;
+                }
+            }
 
-                float minX = (overlapLeft < overlapRight) ? overlapLeft : overlapRight;
-                float minY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;
+            //============================Collision part===========================================//
 
-                if (minX < minY) { // Horizontal collision
-                    if (overlapLeft < overlapRight) {
-                        player.rect.x -= overlapLeft;
-                        onRightWall = true; // Check collision with right side of platform
-                    } else {
-                        player.rect.x += overlapRight;
-                        onLeftWall = true;  // Check collision with left side of platform
+            // Detect collisions for jump
+            bool onLeftWall = false;    //touching left side of wall
+            bool onRightWall = false;   //touching right side of wall
+            bool onPlatform = false;    //standing on platform
+
+            for (int i = 0; i < MAX_PLATFORMS; i++) {
+                Rectangle plat = platforms[i];  //check each platform one by one
+
+                if (CheckCollisionRecs(player.rect, plat)) {
+                    if (player.rect.x + player.rect.width > plat.x &&
+                        player.rect.x < plat.x &&
+                        player.rect.y + player.rect.height > plat.y &&
+                        player.rect.y < plat.y + plat.height) {
+                        onRightWall = true;         // Check collision with right side of platform
                     }
-                } else { // Vertical collision
-                    if (overlapTop < overlapBottom) { // Collided with top of platform
-                        player.rect.y -= overlapTop;
-                        player.velocityY = 0;
-                        player.isJumping = false;
-                        onPlatform = true;
-                    } else { // Collided with bottom of platform
-                        player.rect.y += overlapBottom;
-                        player.velocityY = 0;
+
+                    if (player.rect.x < plat.x + plat.width &&
+                        player.rect.x + player.rect.width > plat.x + plat.width &&
+                        player.rect.y + player.rect.height > plat.y &&
+                        player.rect.y < plat.y + plat.height) {
+                        onLeftWall = true;          // Check collision with left side of platform
+                    }
+
+                    // Calculate how much the player overlaps the platform
+                    float overlapLeft = (player.rect.x + player.rect.width) - plat.x;
+                    float overlapRight = (plat.x + plat.width) - player.rect.x;
+                    float overlapTop = (player.rect.y + player.rect.height) - plat.y;
+                    float overlapBottom = (plat.y + plat.height) - player.rect.y;
+
+                    // Find smallest overlap to determine collision direction
+                    float minOverlapX = (overlapLeft < overlapRight) ? overlapLeft : overlapRight;
+                    float minOverlapY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;
+
+                    if (minOverlapX < minOverlapY) {            // Horizontal collision
+                        if (overlapLeft < overlapRight) {       //collision from left side
+                            player.rect.x -= overlapLeft;       //move player position to negate overlap
+                        } else {                                //collision from right side
+                            player.rect.x += overlapRight;
+                        }
+                    } else {                                    // Vertical collision
+                        if (overlapTop < overlapBottom) {       // Collided with top of platform
+                            player.rect.y -= overlapTop;
+                            player.velocityY = 0;
+                            player.isJumping = false;
+                            onPlatform = true;
+                        } else {                                // Collided with bottom of platform
+                            player.rect.y += overlapBottom;
+                            player.velocityY = 0;
+                        }
                     }
                 }
             }
-        }
 
-        if (!onPlatform) player.isJumping = true;
+            if (!onPlatform) player.isJumping = true;           // If not on a platform, player is jumping
 
-        // RED LIGHT: detect any move (always check, not just when alive)
-        if (light == RED_LIGHT &&
-            !is_dead &&
-            ((player.rect.x != last_pos.x) || (player.rect.y != last_pos.y) || player.isJumping)) {
-            is_dead = true;
-            player_anim.row = 7;
-            player_anim.first_frame = 0;
-            player_anim.last_frame = 13;
-            player_anim.current_frame = 0;
-            player_anim.type = ONESHOT;
-            player_anim.duration_left = player_anim.speed;
-        }
 
-        if (!is_dead) {
+
+
+
+            
+
+
+            
+            
+
+            //======================================Movement Section=======================================//
+
             // Movement with A and D
             if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
                 player.rect.x -= PLAYER_SPEED;
@@ -222,32 +338,118 @@ int main() {
                 moving = true;
             }
 
-            // Jump with W or SPACE
-            if ((IsKeyPressed(KEY_W) || IsKeyPressed(KEY_SPACE)) && light == GREEN_LIGHT) {
-                if (!player.isJumping && onPlatform) {
-                    player.velocityY = JUMP_FORCE;
-                    player.isJumping = true;
-                } else if (onLeftWall || onRightWall) {
-                    player.velocityY = JUMP_FORCE;
-                    player.isJumping = true;
-                    if (onLeftWall) player.rect.x += 25.0f;
-                    if (onRightWall) player.rect.x -= 25.0f;
+            //Dash with LShift
+            if (IsKeyPressed(KEY_LEFT_SHIFT) && player.dashCount > 0) {
+                if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
+                    player.rect.x -= DASH_DISTANCE;
+                    player.dashCount--;
+                } else if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
+                    player.rect.x += DASH_DISTANCE;
+                    player.dashCount--;
                 }
             }
 
-            // Force idle animation if standing on platform and not moving/jumping
+            // Jump with W or SPACE
+            if ((IsKeyPressed(KEY_W) || IsKeyPressed(KEY_SPACE)) && light == GREEN_LIGHT) {
+                if (!player.isJumping && onPlatform) {          //Normal Jump
+                    player.velocityY = JUMP_FORCE;
+                    player.isJumping = true;
+                } else if (player.doubleJumpCount > 0 && player.isJumping) {
+                    player.velocityY = JUMP_FORCE;
+                    (player.doubleJumpCount)--;
+                } else if (onLeftWall || onRightWall) {         // Wall jump
+                    player.velocityY = JUMP_FORCE;
+                    player.isJumping = true;
+
+                    // Add horizontal push-off from wall
+                    if (onLeftWall) player.rect.x += 25.0f;  // push right
+                    if (onRightWall) player.rect.x -= 25.0f; // push left
+                }
+            }
+
+            player.velocityY += GRAVITY;
+            player.rect.y += player.velocityY;
+
+            //===============================================================================================//
+
+            // idle animation if standing on platform and not moving/jumping
             if (onPlatform && !moving && !player.isJumping) {
-                player_anim.row = 0;
-                player_anim.first_frame = 0;
-                player_anim.last_frame = 7;
-                player_anim.type = LOOP;
+                if (player_anim.row != 0) { 
+                    idle_animation(&player_anim);
+                }
             } else {
                 select_player_animation(moving, player.isJumping, &player_anim);
             }
             animation_update(&player_anim);
-        } else {
-            // Only update animation if dead
+
+            // Check fall out of screen
+            if (player.rect.y > SCREEN_HEIGHT + 30) {
+                player.isAlive = false;
+                death_animation(&player_anim);
+            }
+
+            // RED LIGHT: detect any move
+            if (light == RED_LIGHT && (
+                    IsKeyDown(KEY_A) || IsKeyDown(KEY_D) ||
+                    IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT) ||
+                    IsKeyDown(KEY_W) || IsKeyDown(KEY_SPACE) ||
+                    IsKeyDown(KEY_LEFT_SHIFT))) {
+                if (player.isAlive) {
+                    player.isAlive = false;
+                    death_animation(&player_anim);
+                    
+                }
+            }
+            if (CheckCollisionRecs(player.rect, damageBlock)) {
+                player.health--;
+                hit_animation(&player_anim);
+
+                if (player.health == 0) {
+                    
+                    player.isAlive = false;
+                    hit_animation(&player_anim);
+                    death_animation(&player_anim);
+                    
+                } 
+                else {
+                    player.rect.x -= 20; // knockback
+                }
+            }
+        } 
+        
+        
+        
+        
+        else {
             animation_update(&player_anim);
+
+
+
+            //====================================== RESET =======================================//
+
+            if (IsKeyPressed(KEY_R)) {
+                // Reset player
+                player.rect.x = 100;
+                player.rect.y = 300;
+                player.velocityY = 0;
+                player.isJumping = false;
+                player.isAlive = true;
+                player.health = 3;
+
+                // Reset animation to idle
+                idle_animation(&player_anim);
+
+                // Reset camera target
+                camera.target = (Vector2){player.rect.x + player.rect.width / 2, player.rect.y + player.rect.height / 2};
+
+                //reset double jumps
+                for (int i = 0; i < DOUBLE_JUMPS; i++) {
+                    Djumps[i].isCollected = false;
+                }
+                for (int i = 0; i < DASHES; i++) {
+                    Dashes[i].isCollected = false;
+                }
+            }
         }
 
         // Update camera to follow player
@@ -262,7 +464,27 @@ int main() {
         for (int i = 0; i < MAX_PLATFORMS; i++) {
             DrawRectangleRec(platforms[i], DARKGRAY);
         }
+        // Draw damage block
+        DrawRectangleRec(damageBlock, MAROON);
 
+        //Draw double jumps
+        for (int i = 0; i < DOUBLE_JUMPS; i++) {
+            if (Djumps[i].isCollected == false) {
+                DrawRectangleRec(Djumps[i].rect, RED);
+            }
+        }
+
+        //draw dashes
+        for (int i = 0; i < DASHES; i++) {
+            if (Dashes[i].isCollected == false) {
+                DrawRectangleRec(Dashes[i].rect, GREEN);
+            }
+        }
+
+        //Draw player health
+        DrawText(TextFormat("Health: %d", player.health), 500, 10, 20, WHITE);
+
+     
         Rectangle frame = animation_frame(&player_anim, max_frames, num_rows, player_texture);
         frame.width *= direction;
 
@@ -291,7 +513,16 @@ int main() {
 
         EndMode2D();
 
+        
+
         DrawText(light == GREEN_LIGHT ? "GREEN LIGHT: MOVE!" : "RED LIGHT: DON'T MOVE!", 20, 20, 20, WHITE);
+
+        // Game over message
+        if (!player.isAlive) {
+            DrawText("GAME OVER", SCREEN_WIDTH / 2 - MeasureText("GAME OVER", 40) / 2, SCREEN_HEIGHT / 2 - 20, 40, DARKGRAY);
+            DrawText("Press R to Restart", SCREEN_WIDTH / 2 - MeasureText("Press R to Restart", 20) / 2, SCREEN_HEIGHT / 2 + 20, 20, DARKGRAY);
+        }
+
 
         EndDrawing();
     }
