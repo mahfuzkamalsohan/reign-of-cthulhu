@@ -13,7 +13,8 @@
 #define DOUBLE_JUMPS 2
 #define DASHES 2
 #define TOTAL_TIME 120.0f // seconds (2min game timer)
-#define DASH_DISTANCE 200.0f
+#define DASH_DISTANCE 300.0f
+#define DASH_STEP 60.0f
 
 
 typedef enum AnimationType { LOOP = 1, ONESHOT = 2 } AnimationType;
@@ -32,15 +33,23 @@ typedef struct Animation {
 } Animation;
 
 typedef struct Player {
-    Rectangle rect;
-    float velocityY;
-    bool isJumping;
-    bool isDashing;
-    bool isAlive;
-    int health;
+        Rectangle rect;     //player hitbox
+    float velocityY;    //vertical velocity
+    int facingDirection;    //direction in which player is facing //-1 for left (subtracting abscissa), +1 for right
 
-    int doubleJumpCount;
-    int dashCount;
+
+    bool isAlive;       //alive status
+
+    int health;         //health of player
+
+    bool isJumping;     //if player is on air  
+
+    int doubleJumpCount;    //consumable double jumps
+
+    int dashCount;      //consumable dashes
+    bool isDashing;     //if player is dashing
+    float dashTargetX;  //
+    int dashFrames;
 } Player;
 
 typedef struct Mob {
@@ -204,13 +213,18 @@ int main() {
         //player collision box x, y, width, height
         .rect = {100,300, PLAYER_DRAW_SIZE/4, PLAYER_DRAW_SIZE/2},
         .velocityY = 0,
-        .isJumping = false,
-        .isDashing = false,
+        .facingDirection = 1,
+
         .isAlive = true,
+
         .health = 3,
 
+        .isJumping = false,
+
         .doubleJumpCount = 0,
-        .dashCount = 0
+
+        .dashCount = 0,
+        .isDashing = false
     };
 
     Mob mob = {
@@ -408,24 +422,60 @@ int main() {
 
             // Movement with A and D
             if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
+                player.facingDirection = -1;
                 player.rect.x -= PLAYER_SPEED;
                 direction = LEFT;
                 moving = true;
             }
             if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
+                player.facingDirection = 1;
                 player.rect.x += PLAYER_SPEED;
                 direction = RIGHT;
                 moving = true;
             }
 
-            //Dash with LShift
-            if (IsKeyPressed(KEY_LEFT_SHIFT) && player.dashCount > 0) {
-                if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
-                    player.rect.x -= DASH_DISTANCE;
-                    player.dashCount--;
-                } else if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
-                    player.rect.x += DASH_DISTANCE;
-                    player.dashCount--;
+            
+            // Dash with LShift
+            if (IsKeyPressed(KEY_LEFT_SHIFT) && player.dashCount > 0 && !player.isDashing) {  //dash count = consumable dash, dont dash if one dash already happening
+                player.isDashing = true;            //toggle dashing status on
+
+                player.dashTargetX = player.rect.x + player.facingDirection * DASH_DISTANCE;    //position at end of dash
+                player.dashFrames = (int)(DASH_DISTANCE / DASH_STEP);    //how many frames dash last, increase dash step to make dash faster
+                player.dashCount--; //consume dash count
+            }
+            if (player.isDashing) {         //iteration for each dash frame
+                float step = DASH_STEP * player.facingDirection;
+                
+                Rectangle next_rect = player.rect; //placeholder rectangle to check for collisions before changing player pos
+                next_rect.x = player.rect.x + step; //updating position of rectangle to next frame of dash
+
+                bool collision = false;
+                for (int i = 0; i < MAX_PLATFORMS; i++) {       //checking collision with platforms
+                    if (CheckCollisionRecs(next_rect, platforms[i])) {
+                        
+                        if (player.facingDirection == 1) {
+                            player.rect.x = platforms[i].x - player.rect.width;     //move player to wall side if there is collision
+                        }
+                        else {
+                            player.rect.x = platforms[i].x + platforms[i].width;
+                        }
+                        collision = true;
+                        break;
+                    }
+                }
+
+                if (collision ||
+                    (player.facingDirection == 1 && player.rect.x >= player.dashTargetX) ||
+                    (player.facingDirection == -1 && player.rect.x <= player.dashTargetX)) {
+                        player.isDashing = false;   //if collides, stop dash
+                        player.dashFrames = 0;      //reset dash frames
+                }
+                else {
+                    player.rect.x = next_rect.x;
+                    player.dashFrames--;        //change position and reduce frame if no collision
+                    if (player.dashFrames <= 0) {
+                        player.isDashing = false;   //stop dash if dash frame runs out
+                    }
                 }
             }
 
@@ -536,9 +586,15 @@ int main() {
                 player.rect.x = 100;
                 player.rect.y = 300;
                 player.velocityY = 0;
-                player.isJumping = false;
+                player.facingDirection = 1;
                 player.isAlive = true;
                 player.health = 3;
+
+                player.isJumping = false;
+
+                player.doubleJumpCount = 0;
+                player.dashCount = 0;
+                player.isDashing = false;
 
                 // Reset animation to idle
                 idle_animation(&player_anim);
