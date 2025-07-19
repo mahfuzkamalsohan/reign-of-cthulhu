@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <math.h>
 
 #define PLAYER_DRAW_SIZE 100
 
@@ -42,12 +43,13 @@ typedef struct Player {
 
     int health;         //health of player
 
-    bool isJumping;     //if player is on air  
+    bool isJumping;     //if player is on air 
+    bool isDashing;     //if player is dashing
+    bool isWallSliding;      
 
     int doubleJumpCount;    //consumable double jumps
 
     int dashCount;      //consumable dashes
-    bool isDashing;     //if player is dashing
     float dashTargetX;  //
     int dashFrames;
 } Player;
@@ -273,7 +275,7 @@ int main() {
     };
 
     //temporary damage block
-    Rectangle damageBlock = { 300, 200, 50, 50 }; 
+    Rectangle damageBlock = { 300, -2000, 50, 50 }; 
 
 
 
@@ -358,47 +360,104 @@ int main() {
             bool onRightWall = false;   //touching right side of wall
             bool onPlatform = false;    //standing on platform
 
+            float wallMargin = 2.0f;
+
+            // for (int i = 0; i < MAX_PLATFORMS; i++) {
+            //     Rectangle plat = platforms[i];  //check each platform one by one
+
+            //     if (CheckCollisionRecs(player.rect, plat)) {
+            //         // Detect right side wall contact
+            //         if (fabs((player.rect.x + player.rect.width) - plat.x) < wallMargin &&
+            //             player.rect.y + player.rect.height > plat.y &&
+            //             player.rect.y < plat.y + plat.height) {
+            //                 onRightWall = true;
+            //         }
+
+            //         // Detect left side wall contact
+            //         if (fabs(player.rect.x - (plat.x + plat.width)) < wallMargin &&
+            //              player.rect.y + player.rect.height > plat.y &&
+            //             player.rect.y < plat.y + plat.height) {
+            //                 onLeftWall = true;
+            //         }
+            //         // Calculate how much the player overlaps the platform
+            //         float overlapLeft = (player.rect.x + player.rect.width) - plat.x;
+            //         float overlapRight = (plat.x + plat.width) - player.rect.x;
+            //         float overlapTop = (player.rect.y + player.rect.height) - plat.y;
+            //         float overlapBottom = (plat.y + plat.height) - player.rect.y;
+
+            //         // Find smallest overlap to determine collision direction
+            //         float minOverlapX = (overlapLeft < overlapRight) ? overlapLeft : overlapRight;
+            //         float minOverlapY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;
+
+            //         if (minOverlapX < minOverlapY) {            // Horizontal collision
+            //             if (overlapLeft < overlapRight) {       //collision from left side
+            //                 player.rect.x -= overlapLeft;       //move player position to negate overlap
+            //             } else {                                //collision from right side
+            //                 player.rect.x += overlapRight;
+            //             }
+            //         } else {                                    // Vertical collision
+            //             if (overlapTop < overlapBottom) {       // Collided with top of platform
+            //                 player.rect.y -= overlapTop;
+            //                 player.velocityY = 0;
+            //                 player.isJumping = false;
+            //                 onPlatform = true;
+            //             } else {                                // Collided with bottom of platform
+            //                 player.rect.y += overlapBottom;
+            //                 player.velocityY = 0;
+            //             }
+            //         }
+            //     }
+            // }
+
             for (int i = 0; i < MAX_PLATFORMS; i++) {
-                Rectangle plat = platforms[i];  //check each platform one by one
+               
+                Rectangle plat = platforms[i];
 
-                if (CheckCollisionRecs(player.rect, plat)) {
-                    if (player.rect.x + player.rect.width > plat.x &&
-                        player.rect.x < plat.x &&
-                        player.rect.y + player.rect.height > plat.y &&
-                        player.rect.y < plat.y + plat.height) {
-                        onRightWall = true;         // Check collision with right side of platform
-                    }
+                // Wall contact check (Touches platform wall, not overlap i.g - no collision)
+                // Left wall detection (player touching left side of platform)
+                if ((player.rect.x + player.rect.width >= plat.x - wallMargin) &&   //player width overlaps with left side of platform + margin
+                    (player.rect.x + player.rect.width <= plat.x + wallMargin) &&   //player width does not overlap too deep from left side of platform
+                                                                                    //range margin distance outside -> platform wall -> margine distance inside
+                    (player.rect.y + player.rect.height > plat.y) &&                //player body under top of platform
+                    (player.rect.y < plat.y + plat.height)){                        //player body under bottom of platform
+                        onLeftWall = true;
+                }
 
-                    if (player.rect.x < plat.x + plat.width &&
-                        player.rect.x + player.rect.width > plat.x + plat.width &&
-                        player.rect.y + player.rect.height > plat.y &&
-                        player.rect.y < plat.y + plat.height) {
-                        onLeftWall = true;          // Check collision with left side of platform
-                    }
+                // Right wall detection (player touching right side of platform)
+                if ((player.rect.x <= plat.x + plat.width + wallMargin) &&
+                    (player.rect.x >= plat.x + plat.width - wallMargin) &&
+                    (player.rect.y + player.rect.height > plat.y) &&
+                    (player.rect.y < plat.y + plat.height)) {
+                        onRightWall = true;
+                }
 
-                    // Calculate how much the player overlaps the platform
-                    float overlapLeft = (player.rect.x + player.rect.width) - plat.x;
-                    float overlapRight = (plat.x + plat.width) - player.rect.x;
-                    float overlapTop = (player.rect.y + player.rect.height) - plat.y;
-                    float overlapBottom = (plat.y + plat.height) - player.rect.y;
 
-                    // Find smallest overlap to determine collision direction
-                    float minOverlapX = (overlapLeft < overlapRight) ? overlapLeft : overlapRight;
-                    float minOverlapY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;
+                // Collision Response 
+                if (CheckCollisionRecs(player.rect, plat)) {        //check for collision
+                    float overlapLeft = (player.rect.x + player.rect.width) - plat.x;   //overlap from left side
+                    float overlapRight = (plat.x + plat.width) - player.rect.x;         //overlap from right side   
+                    float overlapTop = (player.rect.y + player.rect.height) - plat.y;   //overlap from top
+                    float overlapBottom = (plat.y + plat.height) - player.rect.y;       //overlap from bottom
 
-                    if (minOverlapX < minOverlapY) {            // Horizontal collision
-                        if (overlapLeft < overlapRight) {       //collision from left side
-                            player.rect.x -= overlapLeft;       //move player position to negate overlap
-                        } else {                                //collision from right side
+                    float minOverlapX = (overlapLeft < overlapRight) ? overlapLeft : overlapRight;  //checks which overlap less between left and right
+                    float minOverlapY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;  //checks which overlap less between top and bottom
+
+                    if (minOverlapX < minOverlapY) {            //if horizontal overlap less
+                        if (overlapLeft < overlapRight) {       //if left overlap less, move to left of platform 
+                            player.rect.x -= overlapLeft;
+                        }
+                        else {
                             player.rect.x += overlapRight;
                         }
-                    } else {                                    // Vertical collision
-                        if (overlapTop < overlapBottom) {       // Collided with top of platform
+                    }
+                    else{
+                        if (overlapTop < overlapBottom) {
                             player.rect.y -= overlapTop;
                             player.velocityY = 0;
                             player.isJumping = false;
                             onPlatform = true;
-                        } else {                                // Collided with bottom of platform
+                        }
+                        else {
                             player.rect.y += overlapBottom;
                             player.velocityY = 0;
                         }
@@ -420,19 +479,38 @@ int main() {
 
             //======================================Movement Section=======================================//
 
+            if ((onLeftWall || onRightWall) && !onPlatform) {        //wallslide if player touching right/left wall
+            
+                player.isWallSliding = true;
+                player.isJumping = true;
+            }
+            
+            if (((player.isWallSliding && IsKeyPressed(KEY_S))|| onPlatform || !(onLeftWall || onRightWall))) {
+                player.isWallSliding = false;
+                 // Add horizontal push-off from wall
+                    if (onRightWall) player.rect.x += 3.0f;  // push right
+                    if (onLeftWall) player.rect.x -= 3.0f; // push left
+            }
+
+
             // Movement with A and D
-            if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
-                player.facingDirection = -1;
-                player.rect.x -= PLAYER_SPEED;
-                direction = LEFT;
-                moving = true;
-            }
-            if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
-                player.facingDirection = 1;
-                player.rect.x += PLAYER_SPEED;
-                direction = RIGHT;
-                moving = true;
-            }
+                if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
+                    player.facingDirection = -1;
+                    if(!player.isWallSliding){          //disable horizontal movement during wallslide
+                        player.rect.x -= PLAYER_SPEED;
+                    }
+                    direction = LEFT;
+                    moving = true;
+                }
+                if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
+                    player.facingDirection = 1;
+                    if(!player.isWallSliding){          //disable horizontal movement during wallslide
+                        player.rect.x += PLAYER_SPEED;
+                    }
+                    direction = RIGHT;
+                    moving = true;
+                }
+            
 
             
             // Dash with LShift
@@ -484,21 +562,30 @@ int main() {
                 if (!player.isJumping && onPlatform) {          //Normal Jump
                     player.velocityY = JUMP_FORCE;
                     player.isJumping = true;
-                } else if (player.doubleJumpCount > 0 && player.isJumping) {
+                } else if (player.doubleJumpCount > 0 && player.isJumping) {    //double jump
                     player.velocityY = JUMP_FORCE;
                     (player.doubleJumpCount)--;
-                } else if (onLeftWall || onRightWall) {         // Wall jump
+                } else if (player.isWallSliding) {         // Wall jump
                     player.velocityY = JUMP_FORCE;
                     player.isJumping = true;
+                    player.isWallSliding = false;
 
                     // Add horizontal push-off from wall
-                    if (onLeftWall) player.rect.x += 25.0f;  // push right
-                    if (onRightWall) player.rect.x -= 25.0f; // push left
+                    if (onRightWall) player.rect.x += 20.0f;  // push right
+                    if (onLeftWall) player.rect.x -= 20.0f; // push left
                 }
             }
 
-            player.velocityY += GRAVITY;
-            player.rect.y += player.velocityY;
+            if (!player.isWallSliding) {    //fast gravity downwards if not sliding (accelerated every frame)
+                player.velocityY += GRAVITY;
+                player.rect.y += player.velocityY;
+            }
+            else {
+                player.velocityY = 1.0f;  // slow slide down    (constant velocity, change if necessary)
+                player.rect.y += player.velocityY;
+            }
+
+
 
             //===============================================================================================//
 
