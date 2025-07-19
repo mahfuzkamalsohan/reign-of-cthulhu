@@ -19,6 +19,7 @@
 typedef enum AnimationType { LOOP = 1, ONESHOT = 2 } AnimationType;
 typedef enum Direction { LEFT = -1, RIGHT = 1 } Direction;
 typedef enum LightState { RED_LIGHT = 0, GREEN_LIGHT = 1 } LightState;
+typedef enum TILE_TYPE { TOP_TILE = 0, LEFT_TILE = 1, RIGHT_TILE = 2, BOTTOM_TILE = 3, CENTER_TILE = 4, LEFT_TOP_TILE = 5, RIGHT_TOP_TILE = 6, LEFT_BOTTOM_TILE = 7, RIGHT_BOTTOM_TILE = 8} TILE_TYPE;
 
 typedef struct Animation {
     int first_frame;
@@ -42,6 +43,12 @@ typedef struct Player {
     int dashCount;
 } Player;
 
+typedef struct Mob {
+    Rectangle rect;
+    bool isAlive;
+    bool isCharged;
+} Mob;
+
 typedef struct PowUpDjump {
     Rectangle rect;
     bool isCollected;
@@ -51,6 +58,35 @@ typedef struct PowUpDash {
     Rectangle rect;
     bool isCollected;
 } PowUpDash;
+
+
+
+void DrawTilemap(Texture2D tileset, int rows, int cols, int tilemap[rows][cols], int startX, int startY, int tileSize) {
+    for (int y = 0; y < rows; y++) {
+        for (int x = 0; x < cols; x++) {
+            int tileIndex = tilemap[y][x];
+
+            Rectangle src = {
+                tileIndex * tileSize,  	
+                0,
+                tileSize,
+                tileSize
+            };
+
+            Rectangle dest = {
+                startX + x * tileSize,
+                startY + y * tileSize,
+                tileSize,
+                tileSize
+            };
+
+            DrawTexturePro(tileset, src, dest, (Vector2){0, 0}, 0, WHITE);
+        }
+    }
+}
+
+
+
 
 void animation_update(Animation* self) {
     self->duration_left -= GetFrameTime();
@@ -139,8 +175,11 @@ void hit_animation(Animation* anim) {
 
 int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Merged Platformer + Animation");
+    const int TILE_SIZE = 32;  //each tile is 32x32 px
 
+    Texture2D tileset = LoadTexture("assets/map/tileset.png");
     Texture2D player_texture = LoadTexture("assets/hero/hero.png");
+
     if (player_texture.id == 0) {
         CloseWindow();
         return 1;
@@ -174,20 +213,55 @@ int main() {
         .dashCount = 0
     };
 
-   //======================================Level Layout=========================================//
+    Mob mob = {
+        .rect = {500, 250, 50, 50},
+        .isAlive = true,
+        .isCharged = false
+    };
 
-    //add platforms
+
+
+
+
+
+   //======================================Level Layout PLATFORMS=========================================//
+
+    //add platforms with physics
     Rectangle platforms[MAX_PLATFORMS] = {
-        {100, 345, 100, 80},
-        {200, 280, 120, 180},
-        {500, 280, 100, 80},
-        {800, 200, 140, 80},
-        {-50,-50,50,120},
-        {200,0,200,180}
+        {100, 345, 160, 160},
+        {200, 280, 128, 192},
+        {400, 100, 192, 192}
+    };
+    int platform1[5][5] = {
+		{LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE},
+		{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+		{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+		{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+		{LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+	};
+
+	int platform2[6][4] = {
+		{LEFT_TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+		{LEFT_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+		{LEFT_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {CENTER_TILE, CENTER_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+	};
+
+    int platform3[6][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
     };
 
     //temporary damage block
     Rectangle damageBlock = { 300, 200, 50, 50 }; 
+
+
 
 
 
@@ -202,7 +276,13 @@ int main() {
         { {300,-40,20,20}, false }
     };
 
+
+
+
+
+
 //====================================Camera Setting========================================//
+
 
     // Setting up camera
     Camera2D camera = {0};
@@ -415,6 +495,30 @@ int main() {
                     player.rect.x -= 20; // knockback
                 }
             }
+
+
+
+            if (CheckCollisionRecs(player.rect, mob.rect)) {
+                if (!mob.isCharged) {
+                    mob.isCharged = true; // Mob is now charged
+                    player.health--; // Player takes damage
+                    hit_animation(&player_anim);
+
+                    if (player.health == 0) {
+                        player.isAlive = false;
+                        death_animation(&player_anim);
+                    }
+                    else {
+                    player.rect.x -= 20; // knockback
+                    }
+
+                    mob.isCharged = false; // Reset mob state after charging
+
+                }
+                 
+            }
+
+
         } 
         
         
@@ -455,17 +559,77 @@ int main() {
         // Update camera to follow player
         camera.target = (Vector2){player.rect.x + player.rect.width / 2, player.rect.y + player.rect.height / 2};
 
+
+
+
+
+
+
+
+
+
+        
+        //====================================== BEGIN DRAWING =======================================//
+
+
         BeginDrawing();
         ClearBackground(light == GREEN_LIGHT ? SKYBLUE : RED);
 
+        char coordText[64];
+        sprintf(coordText, "X: %.2f  Y: %.2f", player.rect.x, player.rect.y);
+        DrawText(coordText, 10, 10, 20, BLACK);
+
+        
+        
+
         BeginMode2D(camera);
+        
+
+     
+
+    //     Rectangle platforms[MAX_PLATFORMS] = {
+    //     {100, 345, 100, 80},
+    //     {200, 280, 120, 180},
+    //     {500, 280, 1000, 80},
+    //     {800, 200, 140, 800},
+    //     {-50,-50,50,120},
+    //     {200,0,200,180}
+    // };
 
         // Draw platforms
-        for (int i = 0; i < MAX_PLATFORMS; i++) {
-            DrawRectangleRec(platforms[i], DARKGRAY);
-        }
+        // for (int i = 0; i < MAX_PLATFORMS; i++) {
+        //     DrawRectangleRec(platforms[i], GREEN);
+        // }
+
+        
+
+
+
+
+        // Draw tilemap
+		DrawTilemap(tileset, 5, 5, platform1, 100, 345, TILE_SIZE);
+		DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE);
+        DrawTilemap(tileset, 6, 6, platform3, 400, 100, TILE_SIZE);
+    
+
+
+
+
+
+
+
+
+
         // Draw damage block
         DrawRectangleRec(damageBlock, MAROON);
+
+        // Draw mob
+        if (mob.isAlive) {
+            DrawRectangleRec(mob.rect, BLUE);
+        }
+        else {
+            DrawRectangleRec(mob.rect, DARKBLUE); // Draw dead mob
+        }
 
         //Draw double jumps
         for (int i = 0; i < DOUBLE_JUMPS; i++) {
@@ -481,8 +645,7 @@ int main() {
             }
         }
 
-        //Draw player health
-        DrawText(TextFormat("Health: %d", player.health), 500, 10, 20, WHITE);
+        
 
      
         Rectangle frame = animation_frame(&player_anim, max_frames, num_rows, player_texture);
@@ -510,9 +673,14 @@ int main() {
             (int)player.rect.height,
             GREEN  // Pick any color
         );
+        
+        
+
 
         EndMode2D();
 
+        //Draw player health
+        DrawText(TextFormat("Health: %d", player.health), 500, 10, 20, WHITE);
         
 
         DrawText(light == GREEN_LIGHT ? "GREEN LIGHT: MOVE!" : "RED LIGHT: DON'T MOVE!", 20, 20, 20, WHITE);
@@ -523,7 +691,7 @@ int main() {
             DrawText("Press R to Restart", SCREEN_WIDTH / 2 - MeasureText("Press R to Restart", 20) / 2, SCREEN_HEIGHT / 2 + 20, 20, DARKGRAY);
         }
 
-
+        
         EndDrawing();
     }
 
