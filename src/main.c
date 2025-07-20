@@ -4,6 +4,7 @@
 #include <math.h>
 
 #define PLAYER_DRAW_SIZE 100
+#define MOB_DRAW_SIZE 350 
 
 #define SCREEN_WIDTH 1080
 #define SCREEN_HEIGHT 720
@@ -16,6 +17,7 @@
 #define TOTAL_TIME 120.0f // seconds (2min game timer)
 #define DASH_DISTANCE 300.0f
 #define DASH_STEP 60.0f
+#define EYEBALL_MOB_TIMER 1.0f // seconds
 
 
 typedef enum AnimationType { LOOP = 1, ONESHOT = 2 } AnimationType;
@@ -34,7 +36,7 @@ typedef struct Animation {
 } Animation;
 
 typedef struct Player {
-        Rectangle rect;     //player hitbox
+    Rectangle rect;     //player hitbox
     float velocityY;    //vertical velocity
     int facingDirection;    //direction in which player is facing //-1 for left (subtracting abscissa), +1 for right
 
@@ -55,9 +57,11 @@ typedef struct Player {
 } Player;
 
 typedef struct Mob {
-    Rectangle rect;
+    Rectangle collider;
+    Rectangle hitbox; //mob hitbox
     bool isAlive;
-    bool isCharged;
+    bool isActive; 
+    float timer;
 } Mob;
 
 typedef struct PowUpDjump {
@@ -183,6 +187,31 @@ void hit_animation(Animation* anim) {
     anim->type = ONESHOT;
     anim->duration_left = anim->speed;
 }
+void mob_attack_animation1(Animation* anim) {
+    anim->row = 3;
+    anim->first_frame = 0;
+    anim->last_frame = 9;
+    anim->current_frame = 0;
+    anim->type = ONESHOT;
+    anim->duration_left = anim->speed;
+}
+void mob_attack_animation2(Animation* anim) {
+    anim->row = 3;
+    anim->first_frame = 0;
+    anim->last_frame = 9;
+    anim->current_frame = 0;
+    anim->type = ONESHOT;
+    anim->duration_left = anim->speed;
+}
+void mob_idle_animation(Animation* anim) {
+    anim->row = 0;
+    anim->first_frame = 0;
+    anim->last_frame = 9;
+    anim->current_frame = 0;
+    anim->type = LOOP;
+    anim->duration_left = anim->speed;
+}
+
 
 int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Merged Platformer + Animation");
@@ -190,8 +219,9 @@ int main() {
 
     Texture2D tileset = LoadTexture("assets/map/tileset.png");
     Texture2D player_texture = LoadTexture("assets/hero/hero.png");
+    Texture2D mob_texture = LoadTexture("assets/enemies/eyehead.png");
 
-    if (player_texture.id == 0) {
+    if (player_texture.id == 0 || mob_texture.id == 0) {
         CloseWindow();
         return 1;
     }
@@ -202,6 +232,19 @@ int main() {
     Animation player_anim = {
         .first_frame = 0,
         .last_frame = 7,
+        .current_frame = 0,
+        .speed = 0.1f,
+        .duration_left = 0.1f,
+        .row = 0,
+        .type = LOOP
+    };
+
+    const int mob_max_frames = 10;
+    const int mob_num_rows = 6;
+
+    Animation mob_anim = {
+        .first_frame = 0,
+        .last_frame = 9,
         .current_frame = 0,
         .speed = 0.1f,
         .duration_left = 0.1f,
@@ -229,10 +272,13 @@ int main() {
         .isDashing = false
     };
 
+
     Mob mob = {
-        .rect = {500, 250, 50, 50},
+        .collider = {400, 50, 200, 50},
+        .hitbox = {400, 50, 20, 50},
         .isAlive = true,
-        .isCharged = false
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
     };
 
 
@@ -635,69 +681,99 @@ int main() {
 
 
 
-            if (CheckCollisionRecs(player.rect, mob.rect)) {
-                if (!mob.isCharged) {
-                    mob.isCharged = true; // Mob is now charged
+
+            //======================================Mob Section=======================================//
+
+            //mob hitbox centered on collider
+            mob.hitbox.x = mob.collider.x + (mob.collider.width - mob.hitbox.width) / 2; 
+            mob.hitbox.y = mob.collider.y + mob.collider.height - mob.hitbox.height; 
+            if (CheckCollisionRecs(player.rect, mob.collider)) {
+                if (!mob.isActive) {
+                    mob.isActive = true; 
+                    mob.timer = EYEBALL_MOB_TIMER; //bug fix: activate mob on first collision 
+                }
+                mob.timer -= GetFrameTime();
+
+                if(mob.timer <= 0){
+                    
+                    mob_attack_animation1(&mob_anim);
+                    
+
                     player.health--; // Player takes damage
                     hit_animation(&player_anim);
-
+                    
                     if (player.health == 0) {
-                        player.isAlive = false;
+
+                        
+                        hit_animation(&player_anim);
+                        player.rect.x -= 10; // knockback
                         death_animation(&player_anim);
-                    }
-                    else {
-                    player.rect.x -= 20; // knockback
-                    }
+                        player.isAlive = false;
 
-                    mob.isCharged = false; // Reset mob state after charging
 
+                    } else {
+                        player.rect.x -= 10; // knockback
+                    }
+                    mob.timer = EYEBALL_MOB_TIMER; 
+                    
                 }
-                 
+            }
+            else {
+                mob.isActive = false;
+                if( mob_anim.row != 0){
+                    mob_idle_animation(&mob_anim);
+                }
+                
             }
 
-
-        } 
+        }
         
         
+        //==================================== Animation Updates =======================================//
         
-        
-        else {
-            animation_update(&player_anim);
+        animation_update(&mob_anim);
+        animation_update(&player_anim);
 
 
 
-            //====================================== RESET =======================================//
 
-            if (IsKeyPressed(KEY_R)) {
-                // Reset player
-                player.rect.x = 100;
-                player.rect.y = 300;
-                player.velocityY = 0;
-                player.facingDirection = 1;
-                player.isAlive = true;
-                player.health = 3;
 
-                player.isJumping = false;
 
-                player.doubleJumpCount = 0;
-                player.dashCount = 0;
-                player.isDashing = false;
 
-                // Reset animation to idle
-                idle_animation(&player_anim);
+        //====================================== RESET =======================================//
+            
+        if (IsKeyPressed(KEY_R)) {
+            // Reset player
+            player.rect.x = 100;
+            player.rect.y = 300;
+            player.velocityY = 0;
+            player.facingDirection = 1;
+            player.isAlive = true;
+            player.health = 3;
 
-                // Reset camera target
-                camera.target = (Vector2){player.rect.x + player.rect.width / 2, player.rect.y + player.rect.height / 2};
+            player.isJumping = false;
 
-                //reset double jumps
-                for (int i = 0; i < DOUBLE_JUMPS; i++) {
-                    Djumps[i].isCollected = false;
-                }
-                for (int i = 0; i < DASHES; i++) {
-                    Dashes[i].isCollected = false;
-                }
+            player.doubleJumpCount = 0;
+            player.dashCount = 0;
+            player.isDashing = false;
+
+            // Reset animation to idle
+            idle_animation(&player_anim);
+
+            // Reset camera target
+            camera.target = (Vector2){player.rect.x + player.rect.width / 2, player.rect.y + player.rect.height / 2};
+
+            //reset double jumps
+            for (int i = 0; i < DOUBLE_JUMPS; i++) {
+                Djumps[i].isCollected = false;
+            }
+            for (int i = 0; i < DASHES; i++) {
+                Dashes[i].isCollected = false;
             }
         }
+
+
+  
 
         // Update camera to follow player
         camera.target = (Vector2){player.rect.x + player.rect.width / 2, player.rect.y + player.rect.height / 2};
@@ -766,13 +842,8 @@ int main() {
         // Draw damage block
         DrawRectangleRec(damageBlock, MAROON);
 
-        // Draw mob
-        if (mob.isAlive) {
-            DrawRectangleRec(mob.rect, BLUE);
-        }
-        else {
-            DrawRectangleRec(mob.rect, DARKBLUE); // Draw dead mob
-        }
+        //DrawRectangleRec(mob.collider, DARKPURPLE);
+        //DrawRectangleRec(mob.hitbox, PURPLE);
 
         //Draw double jumps
         for (int i = 0; i < DOUBLE_JUMPS; i++) {
@@ -802,6 +873,24 @@ int main() {
                 player.rect.y + player.rect.height / 2 - PLAYER_DRAW_SIZE / 2,
                 PLAYER_DRAW_SIZE * direction,
                 PLAYER_DRAW_SIZE
+            },
+            (Vector2){0, 0},
+            0.0f,
+            WHITE
+        );
+
+
+        Rectangle mob_frame = animation_frame(&mob_anim, mob_max_frames, mob_num_rows, mob_texture);
+
+
+        DrawTexturePro(
+            mob_texture,
+            mob_frame,
+            (Rectangle){
+                mob.hitbox.x + mob.hitbox.width / 2 - MOB_DRAW_SIZE / 2,
+                mob.hitbox.y + mob.hitbox.height / 2 - MOB_DRAW_SIZE / 2,
+                MOB_DRAW_SIZE * direction,
+                MOB_DRAW_SIZE - 50
             },
             (Vector2){0, 0},
             0.0f,
