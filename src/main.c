@@ -9,7 +9,7 @@
 #define SCREEN_WIDTH 1080
 #define SCREEN_HEIGHT 720
 #define GRAVITY 0.5f
-#define JUMP_FORCE -12.0f
+#define JUMP_FORCE -10.0f
 #define PLAYER_SPEED 5.0f
 #define MAX_PLATFORMS 6
 #define DOUBLE_JUMPS 2
@@ -54,6 +54,7 @@ typedef struct Player {
     int dashCount;      //consumable dashes
     float dashTargetX;  //
     int dashFrames;
+    bool isAttacking; 
 } Player;
 
 typedef struct Mob {
@@ -159,6 +160,9 @@ void select_player_animation(bool moving, bool jumping, Animation* anim) {
     }
 }
 
+
+//=============================== Animation Functions ===================================//
+
 void death_animation(Animation* anim) {
     anim->row = 7;
     anim->first_frame = 0;
@@ -168,6 +172,23 @@ void death_animation(Animation* anim) {
     anim->duration_left = anim->speed;
 }
 
+void player_attack_animation1(Animation* anim) {
+    anim->row = 2;
+    anim->first_frame = 0;
+    anim->last_frame = 3;
+    anim->current_frame = 0;
+    anim->type = ONESHOT;
+    anim->duration_left = anim->speed;
+
+}
+void player_attack_animation2(Animation* anim) {
+    anim->row = 3;
+    anim->first_frame = 0;
+    anim->last_frame = 2;
+    anim->current_frame = 0;
+    anim->type = ONESHOT;
+    anim->duration_left = anim->speed;
+}
 void idle_animation(Animation* anim) {
     
     anim->row = 0;
@@ -233,7 +254,7 @@ int main() {
         .first_frame = 0,
         .last_frame = 7,
         .current_frame = 0,
-        .speed = 0.1f,
+        .speed = 0.15f,
         .duration_left = 0.1f,
         .row = 0,
         .type = LOOP
@@ -269,7 +290,8 @@ int main() {
         .doubleJumpCount = 0,
 
         .dashCount = 0,
-        .isDashing = false
+        .isDashing = false,
+        .isAttacking = false,
     };
 
 
@@ -523,7 +545,7 @@ int main() {
             
             
 
-            //======================================Movement Section=======================================//
+            //======================================Movement Section/Controls=======================================//
 
             if ((onLeftWall || onRightWall) && !onPlatform) {        //wallslide if player touching right/left wall
             
@@ -631,19 +653,34 @@ int main() {
                 player.rect.y += player.velocityY;
             }
 
-
+            
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !player.isAttacking) {
+                player_attack_animation1(&player_anim);
+                player.isAttacking = true;
+            }
+            else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && !player.isAttacking) {
+                player_attack_animation2(&player_anim);
+                player.isAttacking = true;
+            }
 
             //===============================================================================================//
 
             // idle animation if standing on platform and not moving/jumping
-            if (onPlatform && !moving && !player.isJumping) {
-                if (player_anim.row != 0) { 
-                    idle_animation(&player_anim);
+            if (!player.isAttacking) {
+                if (onPlatform && !moving && !player.isJumping) {
+                    if (player_anim.row != 0) { 
+                        idle_animation(&player_anim);
+                    }
+                } else {
+                    select_player_animation(moving, player.isJumping, &player_anim);
                 }
-            } else {
-                select_player_animation(moving, player.isJumping, &player_anim);
             }
             animation_update(&player_anim);
+
+            if (player.isAttacking && player_anim.current_frame >= player_anim.last_frame) {
+                player.isAttacking = false;
+                idle_animation(&player_anim);
+            }
 
             // Check fall out of screen
             if (player.rect.y > SCREEN_HEIGHT + 30) {
@@ -913,7 +950,11 @@ int main() {
 
         //Draw player health
         DrawText(TextFormat("Health: %d", player.health), 500, 10, 20, WHITE);
-        
+
+
+        //Draw INSTRUCTIONS
+        DrawText("LEFT CLICK: LIGHT ATTACK", 750, 10, 20, BLACK);
+        DrawText("RIGHT CLICK: HEAVY ATTACK", 750, 40, 20, BLACK);
 
         DrawText(light == GREEN_LIGHT ? "GREEN LIGHT: MOVE!" : "RED LIGHT: DON'T MOVE!", 20, 20, 20, WHITE);
 
