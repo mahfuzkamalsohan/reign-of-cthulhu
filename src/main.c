@@ -6,12 +6,11 @@
 #define PLAYER_DRAW_SIZE 100
 #define MOB_DRAW_SIZE 350 
 
-#define SCREEN_WIDTH 1080
-#define SCREEN_HEIGHT 720
+
 #define GRAVITY 0.5f
 #define JUMP_FORCE -10.0f
 #define PLAYER_SPEED 5.0f
-#define MAX_PLATFORMS 6
+#define MAX_PLATFORMS 30
 #define DOUBLE_JUMPS 2
 #define DASHES 2
 #define TOTAL_TIME 120.0f // seconds (2min game timer)
@@ -102,7 +101,23 @@ void DrawTilemap(Texture2D tileset, int rows, int cols, int tilemap[rows][cols],
 }
 
 
+void boss_awake_animation(Animation* anim) {
+    anim->row = 1;
+    anim->first_frame = 0;
+    anim->last_frame = 3;
+    anim->current_frame = 0;
+    anim->type = ONESHOT;
+    anim->duration_left = anim->speed;
+}
 
+void boss_sleep_animation(Animation* anim) {
+    anim->row = 0;
+    anim->first_frame = 0;
+    anim->last_frame = 3;
+    anim->current_frame = 0;
+    anim->type = ONESHOT;
+    anim->duration_left = anim->speed;
+}
 
 void animation_update(Animation* self) {
     self->duration_left -= GetFrameTime();
@@ -235,12 +250,20 @@ void mob_idle_animation(Animation* anim) {
 
 
 int main() {
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Merged Platformer + Animation");
+    int screenWidth = 1080;
+    int screenHeight = 720;
+
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    SetTargetFPS(60);
+    InitWindow(screenWidth, screenHeight, "Merged Platformer + Animation");
     const int TILE_SIZE = 32;  //each tile is 32x32 px
 
     Texture2D tileset = LoadTexture("assets/map/tileset.png");
     Texture2D player_texture = LoadTexture("assets/hero/hero.png");
     Texture2D mob_texture = LoadTexture("assets/enemies/eyehead.png");
+    Texture2D boss_background = LoadTexture("assets/boss/boss_static.png");
+    Texture2D boss_awake_texture = LoadTexture("assets/boss/boss_awake.png");
+    Texture2D boss_sleep_texture = LoadTexture("assets/boss/boss_sleep.png");
 
     if (player_texture.id == 0 || mob_texture.id == 0) {
         CloseWindow();
@@ -260,8 +283,21 @@ int main() {
         .type = LOOP
     };
 
+    Animation boss_anim = {
+        .first_frame = 0,
+        .last_frame = 3,
+        .current_frame = 0,
+        .speed = 0.15f,
+        .duration_left = 0.1f,
+        .row = 0,
+        .type = ONESHOT
+    };
+
     const int mob_max_frames = 10;
     const int mob_num_rows = 6;
+
+    const int boss_max_frames = 4;
+    const int boss_num_rows = 1;
 
     Animation mob_anim = {
         .first_frame = 0,
@@ -311,10 +347,65 @@ int main() {
    //======================================Level Layout PLATFORMS=========================================//
 
     //add platforms with physics
+    // Rectangle platforms[MAX_PLATFORMS] = {
+    //     {100, 345, 160, 160},
+    //     {200, 280, 128, 192},
+    //     {400, 100, 192, 192}
+    // };
+    // int platform1[5][5] = {
+	// 	{LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE},
+	// 	{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+	// 	{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+	// 	{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+	// 	{LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+	// };
+
+	// int platform2[6][4] = {
+	// 	{LEFT_TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+	// 	{LEFT_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+	// 	{TOP_LEFT_ANGLE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    //     {CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    //     {CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    //     {CENTER_TILE, RIGHT_BOTTOM_ANGLE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+	// };
+
+    // int platform3[6][6] = {
+    //     {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+    //     {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    //     {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    //     {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    //     {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    //     {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    // };
+
+
+
+
     Rectangle platforms[MAX_PLATFORMS] = {
         {100, 345, 160, 160},
         {200, 280, 128, 192},
-        {400, 100, 192, 192}
+        {400, 100, 192, 192},
+        {700, 150, 256, 128},
+        {900, 250, 256, 128},
+        {1200, 260, 160, 160}, 
+        {1400, 100, 192, 160},
+        {1700, 200, 160, 160}, 
+        {1860, 300, 160, 160},
+        {2100, 250, 192, 128},  
+        {2300, 200, 160, 128},   
+        {2500, 50, 256, 128},   
+        {2800, 150, 192, 128},    
+        {3150, 180, 192, 160},   
+        {3350, 100, 160, 128},  
+        {3500, 140, 128, 96},    
+        {3700, 220, 192, 96},     
+        {3800, 100, 224, 128}, 
+        {4100, 50, 160, 160},   
+        {4400, 90, 192, 128},    
+        {4700, 60, 576, 256},    
+        {5400, 310, 320, 224},   
+        {5800, 130, 256, 160}
+
     };
     int platform1[5][5] = {
 		{LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE},
@@ -327,10 +418,10 @@ int main() {
 	int platform2[6][4] = {
 		{LEFT_TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
 		{LEFT_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
-		{TOP_LEFT_ANGLE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+		{LEFT_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
         {CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
         {CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
-        {CENTER_TILE, RIGHT_BOTTOM_ANGLE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+        {CENTER_TILE, CENTER_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
 	};
 
     int platform3[6][6] = {
@@ -341,6 +432,163 @@ int main() {
         {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
         {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
     };
+
+    int platform4[4][8] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE ,CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, CENTER_TILE}
+    };
+
+    int platform5[4][8] = {
+        {CENTER_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE ,CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform6[5][5] = {
+		{LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+		{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+		{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+		{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+		{LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+	};
+
+    int platform7[5][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform8[5][5] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform9[5][5] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    
+    int platform10[5][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform11[4][5] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform12[4][8] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform13[5][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+
+
+    int platform14[5][5] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform15[4][5] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform16[3][4] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform17[3][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, CENTER_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform18[4][7] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, CENTER_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform19[5][5] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform20[4][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform21[8][18] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform22[7][10] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+    int platform23[5][8] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
+
 
     //temporary damage block
     Rectangle damageBlock = { 300, -2000, 50, 50 }; 
@@ -370,7 +618,7 @@ int main() {
 
     // Setting up camera
     Camera2D camera = {0};
-    camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+    camera.offset = (Vector2){screenWidth / 2.0f, screenHeight / 2.0f};
     camera.target = (Vector2){player.rect.x + player.rect.width / 2, player.rect.y + player.rect.height / 2};
     camera.zoom = 1.0f;
 
@@ -387,6 +635,33 @@ int main() {
     SetTargetFPS(60);
 
     while (!WindowShouldClose()) {
+        if (IsWindowResized() && !IsWindowFullscreen())
+        {
+            screenWidth = GetScreenWidth();
+            screenHeight = GetScreenHeight();
+        }
+
+        // check for alt + enter
+ 		if (IsKeyPressed(KEY_ENTER) && (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)))
+ 		{
+            // see what display we are on right now
+ 			int display = GetCurrentMonitor();
+ 
+            
+            if (IsWindowFullscreen())
+            {
+                // if we are full screen, then go back to the windowed size
+                SetWindowSize(screenWidth, screenHeight);
+            }
+            else
+            {
+                // if we are not full screen, set the window size to match the monitor we are on
+                SetWindowSize(GetMonitorWidth(display), GetMonitorHeight(display));
+            }
+ 
+            // toggle the state
+ 			ToggleFullscreen();
+        }
 
         float dt = GetFrameTime();
         double elapsed = GetTime() - state_start_time;
@@ -394,9 +669,11 @@ int main() {
 
             // Light state logic
             if (light == GREEN_LIGHT && elapsed >= 10.0) {
+                boss_awake_animation(&boss_anim);
                 light = RED_LIGHT;
                 state_start_time = GetTime();
-            } else if (light == RED_LIGHT && elapsed >= 1.0) {
+            } else if (light == RED_LIGHT && elapsed >= 5.0) {
+                boss_sleep_animation(&boss_anim);
                 light = GREEN_LIGHT;
                 state_start_time = GetTime();   
             }
@@ -683,7 +960,7 @@ int main() {
             }
 
             // Check fall out of screen
-            if (player.rect.y > SCREEN_HEIGHT + 30) {
+            if (player.rect.y > screenHeight + 30) {
                 player.isAlive = false;
                 death_animation(&player_anim);
             }
@@ -693,7 +970,7 @@ int main() {
                     IsKeyDown(KEY_A) || IsKeyDown(KEY_D) ||
                     IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT) ||
                     IsKeyDown(KEY_W) || IsKeyDown(KEY_SPACE) ||
-                    IsKeyDown(KEY_LEFT_SHIFT))) {
+                    IsKeyDown(KEY_LEFT_SHIFT))){
                 if (player.isAlive) {
                     player.isAlive = false;
                     death_animation(&player_anim);
@@ -770,6 +1047,7 @@ int main() {
         
         animation_update(&mob_anim);
         animation_update(&player_anim);
+        animation_update(&boss_anim);
 
 
 
@@ -829,13 +1107,40 @@ int main() {
 
 
         BeginDrawing();
-        ClearBackground(light == GREEN_LIGHT ? SKYBLUE : RED);
+        //ClearBackground(light == GREEN_LIGHT ? SKYBLUE : RED);
+      
+
+        // Draw the boss background covering the whole screen
+        DrawTexturePro(
+            boss_background,
+            (Rectangle){0, 0, boss_background.width, boss_background.height},
+            (Rectangle){0, 0, (float)screenWidth, (float)screenHeight},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE
+        );
+
+
+       
+
 
         char coordText[64];
         sprintf(coordText, "X: %.2f  Y: %.2f", player.rect.x, player.rect.y);
         DrawText(coordText, 10, 10, 20, BLACK);
 
-        
+
+        Texture2D current_boss_tex = (light == GREEN_LIGHT) ? boss_sleep_texture : boss_awake_texture;
+        Rectangle boss_frame = animation_frame(&boss_anim, boss_max_frames, boss_num_rows, current_boss_tex);
+
+        // Example 1: full-screen overlay (matches background)
+        DrawTexturePro(
+            current_boss_tex,
+            boss_frame,
+            (Rectangle){0, 0, (float)screenWidth, (float)screenHeight},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE
+        );
         
 
         BeginMode2D(camera);
@@ -863,9 +1168,33 @@ int main() {
 
 
         // Draw tilemap
-		DrawTilemap(tileset, 5, 5, platform1, 100, 345, TILE_SIZE);
-		DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE);
+		// DrawTilemap(tileset, 5, 5, platform1, 100, 345, TILE_SIZE);
+		// DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE);
+        // DrawTilemap(tileset, 6, 6, platform3, 400, 100, TILE_SIZE);
+
+        DrawTilemap(tileset, 5, 5, platform1, 100, 345, TILE_SIZE);
+        DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE);
         DrawTilemap(tileset, 6, 6, platform3, 400, 100, TILE_SIZE);
+        DrawTilemap(tileset, 4, 8, platform4, 700, 150, TILE_SIZE);
+        DrawTilemap(tileset, 4, 8, platform5, 900, 250, TILE_SIZE);
+        DrawTilemap(tileset, 5, 5, platform6, 1200, 260, TILE_SIZE);
+        DrawTilemap(tileset, 5, 6, platform7, 1400, 100, TILE_SIZE);
+        DrawTilemap(tileset, 5, 5, platform8, 1700, 200, TILE_SIZE);
+        DrawTilemap(tileset, 5, 5, platform9, 1840, 300, TILE_SIZE);
+        DrawTilemap(tileset, 5, 6, platform10, 2100, 250, TILE_SIZE);
+        DrawTilemap(tileset, 4, 5, platform11, 2300, 200, TILE_SIZE);
+        DrawTilemap(tileset, 4, 8, platform12, 2500, 50, TILE_SIZE);
+        DrawTilemap(tileset, 5, 6, platform13, 2800, 150, TILE_SIZE);
+        DrawTilemap(tileset, 5, 5, platform14, 3150, 180, TILE_SIZE);
+        DrawTilemap(tileset, 4, 5, platform15, 3350, 100, TILE_SIZE);
+        DrawTilemap(tileset, 3, 4, platform16, 3500, 140, TILE_SIZE);
+        DrawTilemap(tileset, 3, 6, platform17, 3700, 220, TILE_SIZE);
+        DrawTilemap(tileset, 4, 7, platform18, 3800, 100, TILE_SIZE);
+        DrawTilemap(tileset, 5, 5, platform19, 4100, 50, TILE_SIZE);
+        DrawTilemap(tileset, 4, 6, platform20, 4400, 90, TILE_SIZE);
+        DrawTilemap(tileset, 8, 18, platform21, 4700, 60, TILE_SIZE);
+        DrawTilemap(tileset, 7, 10, platform22, 5400, 310, TILE_SIZE);
+        DrawTilemap(tileset, 5, 8, platform23, 5800, 130, TILE_SIZE);
     
 
 
@@ -918,6 +1247,7 @@ int main() {
 
 
         Rectangle mob_frame = animation_frame(&mob_anim, mob_max_frames, mob_num_rows, mob_texture);
+       
 
 
         DrawTexturePro(
@@ -935,13 +1265,13 @@ int main() {
         );
 
         // Visualize the collision box
-        DrawRectangleLines(
-            (int)player.rect.x,
-            (int)player.rect.y,
-            (int)player.rect.width,
-            (int)player.rect.height,
-            GREEN  // Pick any color
-        );
+        // DrawRectangleLines(
+        //     (int)player.rect.x,
+        //     (int)player.rect.y,
+        //     (int)player.rect.width,
+        //     (int)player.rect.height,
+        //     GREEN  // Pick any color
+        // );
         
         
 
@@ -960,8 +1290,8 @@ int main() {
 
         // Game over message
         if (!player.isAlive) {
-            DrawText("GAME OVER", SCREEN_WIDTH / 2 - MeasureText("GAME OVER", 40) / 2, SCREEN_HEIGHT / 2 - 20, 40, DARKGRAY);
-            DrawText("Press R to Restart", SCREEN_WIDTH / 2 - MeasureText("Press R to Restart", 20) / 2, SCREEN_HEIGHT / 2 + 20, 20, DARKGRAY);
+            DrawText("GAME OVER", screenWidth / 2 - MeasureText("GAME OVER", 40) / 2, screenHeight / 2 - 20, 40, DARKGRAY);
+            DrawText("Press R to Restart", screenWidth / 2 - MeasureText("Press R to Restart", 20) / 2, screenHeight / 2 + 20, 20, DARKGRAY);
         }
 
         
