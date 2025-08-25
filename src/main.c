@@ -11,12 +11,13 @@
 #define JUMP_FORCE -10.0f
 #define PLAYER_SPEED 5.0f
 #define MAX_PLATFORMS 30
-#define DOUBLE_JUMPS 2
+#define DOUBLE_JUMPS 3
 #define DASHES 2
 #define TOTAL_TIME 120.0f // seconds (2min game timer)
 #define DASH_DISTANCE 300.0f
 #define DASH_STEP 60.0f
 #define EYEBALL_MOB_TIMER 1.0f // seconds
+
 
 
 typedef enum AnimationType { LOOP = 1, ONESHOT = 2 } AnimationType;
@@ -254,7 +255,13 @@ int main() {
     int screenHeight = 720;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-    SetTargetFPS(60);
+
+    InitAudioDevice();                    
+    Sound awake_fx = LoadSound("assets/sound/awake_fx.mp3");  
+    bool soundPlayed = false; 
+
+
+    
     InitWindow(screenWidth, screenHeight, "Merged Platformer + Animation");
     const int TILE_SIZE = 32;  //each tile is 32x32 px
 
@@ -377,9 +384,10 @@ int main() {
     //     {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
     //     {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
     // };
+    Rectangle teleportZoneA = { 4700, 60, 576, 256};
+    Rectangle teleportZoneB = { 4800, 500, 160, 64 };
 
-
-
+    
 
     Rectangle platforms[MAX_PLATFORMS] = {
         {100, 345, 160, 160},
@@ -404,9 +412,12 @@ int main() {
         {4400, 90, 192, 128},    
         {4700, 60, 576, 256},    
         {5400, 310, 320, 224},   
-        {5800, 130, 256, 160}
+        {5800, 130, 256, 160},
+        {4800, 500, 160, 64}
 
     };
+
+    
     int platform1[5][5] = {
 		{LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE},
 		{LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
@@ -589,6 +600,12 @@ int main() {
     };
 
 
+    int platform24[2][5] ={
+        {LEFT_TOP_TILE, TOP_TILE ,TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE ,BOTTOM_TILE,BOTTOM_TILE,RIGHT_BOTTOM_TILE}
+    };
+
+
 
     //temporary damage block
     Rectangle damageBlock = { 300, -2000, 50, 50 }; 
@@ -601,11 +618,12 @@ int main() {
     //add power ups
     PowUpDjump Djumps[DOUBLE_JUMPS] = {
     //    { {100, 0, 20, 20}, false },
-       { {100,40,20,20}, false }
+       { {100,40,20,20}, false },
+       { {4850, 450, 20, 20}, false }
     };
 
     PowUpDash Dashes[DASHES] = {
-        { {300,-40,20,20}, false }
+        { {300,-40,20,20}, false }        
     };
 
 
@@ -627,7 +645,7 @@ int main() {
     double state_start_time = GetTime();
     Vector2 last_pos = {player.rect.x, player.rect.y};
     
-    // Add at the top of main(), after Animation player_anim = {...};
+   
     int last_anim_row = -1;
 
 //===================================main game loop=======================================//
@@ -667,16 +685,40 @@ int main() {
         double elapsed = GetTime() - state_start_time;
         if (player.isAlive) {
 
-            // Light state logic
-            if (light == GREEN_LIGHT && elapsed >= 10.0) {
+            // // Light state logic
+            // if (light == GREEN_LIGHT && elapsed >= 10.0) {
+            //     PlaySound(awake_fx);
+            //     boss_awake_animation(&boss_anim);
+            //     light = RED_LIGHT;
+            //     state_start_time = GetTime();
+            // } else if (light == RED_LIGHT && elapsed >= 5.0) {
+            //     boss_sleep_animation(&boss_anim);
+            //     light = GREEN_LIGHT;
+            //     state_start_time = GetTime();   
+            // }
+
+            
+            if (light == GREEN_LIGHT) {
+            if (elapsed >= 9.0 && !soundPlayed) {   
+                PlaySound(awake_fx);
+                soundPlayed = true;
+            }
+            if (elapsed >= 10.0) {
                 boss_awake_animation(&boss_anim);
                 light = RED_LIGHT;
                 state_start_time = GetTime();
-            } else if (light == RED_LIGHT && elapsed >= 5.0) {
+                soundPlayed = false;   // reset for next cycle
+            }
+        } else if (light == RED_LIGHT) {
+            if (elapsed >= 5.0) {
                 boss_sleep_animation(&boss_anim);
                 light = GREEN_LIGHT;
-                state_start_time = GetTime();   
+                state_start_time = GetTime();
+                soundPlayed = false;   // reset for next cycle
             }
+        }
+        
+
 
             bool moving = false;  // Track if player is moving for animation
 
@@ -994,7 +1036,16 @@ int main() {
             }
 
 
+            //======================================Teleport===============================================//
 
+            if (CheckCollisionRecs(player.rect, teleportZoneA) && IsKeyPressed(KEY_UP)) {
+                player.rect.x = teleportZoneB.x;
+                player.rect.y = teleportZoneB.y - player.rect.height;
+            }
+            else if (CheckCollisionRecs(player.rect, teleportZoneB) && IsKeyPressed(KEY_UP)) {
+                player.rect.x = teleportZoneA.x;
+            player.rect.y = teleportZoneA.y - player.rect.height;
+            }
 
             //======================================Mob Section=======================================//
 
@@ -1195,6 +1246,7 @@ int main() {
         DrawTilemap(tileset, 8, 18, platform21, 4700, 60, TILE_SIZE);
         DrawTilemap(tileset, 7, 10, platform22, 5400, 310, TILE_SIZE);
         DrawTilemap(tileset, 5, 8, platform23, 5800, 130, TILE_SIZE);
+        DrawTilemap(tileset, 2, 5, platform24, 4800, 500, TILE_SIZE);
     
 
 
@@ -1299,6 +1351,8 @@ int main() {
     }
 
     UnloadTexture(player_texture);
+    UnloadSound(awake_fx);
+    CloseAudioDevice();
     CloseWindow();
     return 0;
 }
