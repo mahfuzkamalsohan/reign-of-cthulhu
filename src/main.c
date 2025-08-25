@@ -55,11 +55,13 @@ typedef struct Player {
     float dashTargetX;  //
     int dashFrames;
     bool isAttacking; 
+    bool isDealingDamage;
 } Player;
 
 typedef struct Mob {
     Rectangle collider;
     Rectangle hitbox; //mob hitbox
+    int mobHealth;
     bool isAlive;
     bool isActive; 
     float timer;
@@ -337,12 +339,14 @@ int main() {
         .dashCount = 0,
         .isDashing = false,
         .isAttacking = false,
+        .isDealingDamage = false
     };
 
 
     Mob mob = {
         .collider = {400, 50, 200, 50},
         .hitbox = {400, 50, 20, 50},
+        .mobHealth = 3,
         .isAlive = true,
         .isActive = false,
         .timer = EYEBALL_MOB_TIMER
@@ -978,10 +982,12 @@ int main() {
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !player.isAttacking) {
                 player_attack_animation1(&player_anim);
                 player.isAttacking = true;
+                player.isDealingDamage = true;
             }
             else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && !player.isAttacking) {
                 player_attack_animation2(&player_anim);
                 player.isAttacking = true;
+                player.isDealingDamage = true;
             }
 
             //===============================================================================================//
@@ -1000,6 +1006,7 @@ int main() {
 
             if (player.isAttacking && player_anim.current_frame >= player_anim.last_frame) {
                 player.isAttacking = false;
+                player.isDealingDamage = false;
                 idle_animation(&player_anim);
             }
 
@@ -1052,6 +1059,7 @@ int main() {
             //======================================Mob Section=======================================//
 
             //mob hitbox centered on collider
+            if(mob.mobHealth>0){
             mob.hitbox.x = mob.collider.x + (mob.collider.width - mob.hitbox.width) / 2; 
             mob.hitbox.y = mob.collider.y + mob.collider.height - mob.hitbox.height; 
             if (CheckCollisionRecs(player.rect, mob.collider)) {
@@ -1085,12 +1093,27 @@ int main() {
                     
                 }
             }
+        }
             else {
                 mob.isActive = false;
                 if( mob_anim.row != 0){
                     mob_idle_animation(&mob_anim);
                 }
                 
+            }
+        }
+
+        //check for player attack
+        if (player.isDealingDamage && mob.isAlive) {
+        //create an attack box larger than player hitbox
+            Rectangle attackBox = player.rect;
+            attackBox.width += 20.00f;
+
+
+        // Check collision with mob
+            if (CheckCollisionRecs(attackBox, mob.hitbox)) {
+                mob.mobHealth--; // Damage mob
+                player.isDealingDamage = false; //prevents multiple damage frames
             }
 
         }
@@ -1124,6 +1147,13 @@ int main() {
             player.doubleJumpCount = 0;
             player.dashCount = 0;
             player.isDashing = false;
+
+            //reset mob
+            
+            mob.mobHealth = 3;
+            mob.isAlive = true;
+            mob.isActive = false;
+            mob.timer = EYEBALL_MOB_TIMER;
 
             // Reset animation to idle
             idle_animation(&player_anim);
@@ -1318,7 +1348,7 @@ int main() {
         Rectangle mob_frame = animation_frame(&mob_anim, mob_max_frames, mob_num_rows, mob_texture);
        
 
-
+        if(mob.mobHealth>0){
         DrawTexturePro(
             mob_texture,
             mob_frame,
@@ -1332,6 +1362,7 @@ int main() {
             0.0f,
             WHITE
         );
+    }
 
         // Visualize the collision box
         // DrawRectangleLines(
