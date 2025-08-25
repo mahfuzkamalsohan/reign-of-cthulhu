@@ -271,6 +271,8 @@ int main() {
     Texture2D boss_background = LoadTexture("assets/boss/boss_static.png");
     Texture2D boss_awake_texture = LoadTexture("assets/boss/boss_awake.png");
     Texture2D boss_sleep_texture = LoadTexture("assets/boss/boss_sleep.png");
+    Texture2D double_jump_texture = LoadTexture("assets/powerups/djump.png");
+    Texture2D dash_texture = LoadTexture("assets/powerups/dash.png");
 
     if (player_texture.id == 0 || mob_texture.id == 0) {
         CloseWindow();
@@ -618,12 +620,12 @@ int main() {
     //add power ups
     PowUpDjump Djumps[DOUBLE_JUMPS] = {
     //    { {100, 0, 20, 20}, false },
-       { {100,40,20,20}, false },
-       { {4850, 450, 20, 20}, false }
+       { {100,40,32,32}, false },
+       { {4850, 450, 32, 32}, false }
     };
 
     PowUpDash Dashes[DASHES] = {
-        { {300,-40,20,20}, false }        
+        { {300,-40,32,32}, false }        
     };
 
 
@@ -1266,14 +1268,29 @@ int main() {
         //Draw double jumps
         for (int i = 0; i < DOUBLE_JUMPS; i++) {
             if (Djumps[i].isCollected == false) {
-                DrawRectangleRec(Djumps[i].rect, RED);
+                //DrawRectangleRec(Djumps[i].rect, RED);
+                DrawTexturePro(
+                    double_jump_texture,
+                    (Rectangle){0, 0, double_jump_texture.width, double_jump_texture.height},
+                    Djumps[i].rect,
+                    (Vector2){0, 0},
+                    0.0f,
+                    WHITE
+                );
             }
         }
 
         //draw dashes
         for (int i = 0; i < DASHES; i++) {
             if (Dashes[i].isCollected == false) {
-                DrawRectangleRec(Dashes[i].rect, GREEN);
+                DrawTexturePro(
+                    dash_texture,
+                    (Rectangle){0, 0, dash_texture.width, dash_texture.height},
+                    Dashes[i].rect,
+                    (Vector2){0, 0},
+                    0.0f,
+                    WHITE
+                );
             }
         }
 
