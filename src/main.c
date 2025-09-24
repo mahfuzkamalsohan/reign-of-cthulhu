@@ -17,6 +17,9 @@
 #define DASH_DISTANCE 300.0f
 #define DASH_STEP 60.0f
 #define EYEBALL_MOB_TIMER 1.0f // seconds
+#define CheckPointcount 10
+
+
 
 
 
@@ -256,6 +259,12 @@ int main() {
     int screenWidth = 1080;
     int screenHeight = 720;
 
+    Vector2 spawnPoint = { 100, 100 }; 
+
+    // Vector2 dotPos = {-100,-100};
+    // bool dotActive = false;
+    // float dotTimer = 0;
+
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
 
     InitAudioDevice();                    
@@ -275,6 +284,7 @@ int main() {
     Texture2D boss_sleep_texture = LoadTexture("assets/boss/boss_sleep.png");
     Texture2D double_jump_texture = LoadTexture("assets/powerups/djump.png");
     Texture2D dash_texture = LoadTexture("assets/powerups/dash.png");
+    Texture2D eyeball = LoadTexture("assets/enemies/eyeball.png");
 
     if (player_texture.id == 0 || mob_texture.id == 0) {
         CloseWindow();
@@ -324,7 +334,7 @@ int main() {
 
     Player player = {
         //player collision box x, y, width, height
-        .rect = {100,300, PLAYER_DRAW_SIZE/4, PLAYER_DRAW_SIZE/2},
+        .rect = {spawnPoint.x,spawnPoint.y, PLAYER_DRAW_SIZE/4, PLAYER_DRAW_SIZE/2},
         .velocityY = 0,
         .facingDirection = 1,
 
@@ -351,6 +361,10 @@ int main() {
         .isActive = false,
         .timer = EYEBALL_MOB_TIMER
     };
+
+    Vector2 dotPos = {player.rect.x-400,player.rect.y-400};
+    bool dotActive = false;
+    float dotTimer = 0;
 
 
 
@@ -392,6 +406,12 @@ int main() {
     // };
     Rectangle teleportZoneA = { 4700, 60, 576, 256};
     Rectangle teleportZoneB = { 4800, 500, 160, 64 };
+    Rectangle Checkpoint[CheckPointcount] = 
+    {
+        {1450,100,32,32},
+        {2550,50,32,32},
+        {4150,50,32,32}
+    };
 
     
 
@@ -614,7 +634,7 @@ int main() {
 
 
     //temporary damage block
-    Rectangle damageBlock = { 300, -2000, 50, 50 }; 
+    Rectangle damageBlock = { 300, -2000, 50, 50 };
 
 
 
@@ -624,7 +644,7 @@ int main() {
     //add power ups
     PowUpDjump Djumps[DOUBLE_JUMPS] = {
     //    { {100, 0, 20, 20}, false },
-       { {100,40,32,32}, false },
+       { {100,120,32,32}, false },
        { {4850, 450, 32, 32}, false }
     };
 
@@ -691,38 +711,53 @@ int main() {
         double elapsed = GetTime() - state_start_time;
         if (player.isAlive) {
 
-            // // Light state logic
-            // if (light == GREEN_LIGHT && elapsed >= 10.0) {
-            //     PlaySound(awake_fx);
-            //     boss_awake_animation(&boss_anim);
-            //     light = RED_LIGHT;
-            //     state_start_time = GetTime();
-            // } else if (light == RED_LIGHT && elapsed >= 5.0) {
-            //     boss_sleep_animation(&boss_anim);
-            //     light = GREEN_LIGHT;
-            //     state_start_time = GetTime();   
-            // }
-
-            
+            // Light state logic (comment this if GREEN LIGHT AT ALL TIMES NEEDED)
             if (light == GREEN_LIGHT) {
-            if (elapsed >= 9.0 && !soundPlayed) {   
-                PlaySound(awake_fx);
-                soundPlayed = true;
-            }
-            if (elapsed >= 10.0) {
-                boss_awake_animation(&boss_anim);
-                light = RED_LIGHT;
-                state_start_time = GetTime();
-                soundPlayed = false;   // reset for next cycle
-            }
-        } else if (light == RED_LIGHT) {
-            if (elapsed >= 5.0) {
+                if (elapsed >= 9.0 && !soundPlayed) {   // Play sound 1 second before red light
+                    PlaySound(awake_fx);
+                    soundPlayed = true;
+                }
+                if (elapsed >= 10.0) {
+                    boss_awake_animation(&boss_anim);
+                    light = RED_LIGHT;
+                    state_start_time = GetTime();
+                    soundPlayed = false;   // reset for next cycle
+                }
+            } else if (light == RED_LIGHT && elapsed >= 5.0) {
                 boss_sleep_animation(&boss_anim);
                 light = GREEN_LIGHT;
                 state_start_time = GetTime();
                 soundPlayed = false;   // reset for next cycle
             }
-        }
+
+
+
+
+
+
+
+
+            
+            
+        //     if (light == GREEN_LIGHT) {
+        //     if (elapsed >= 9.0 && !soundPlayed) {   
+        //         PlaySound(awake_fx);
+        //         soundPlayed = true;
+        //     }
+        //     if (elapsed >= 10.0) {
+        //         boss_awake_animation(&boss_anim);
+        //         light = RED_LIGHT;
+        //         state_start_time = GetTime();
+        //         soundPlayed = false;   // reset for next cycle
+        //     }
+        // } else if (light == RED_LIGHT) {
+        //     if (elapsed >= 5.0) {
+        //         boss_sleep_animation(&boss_anim);
+        //         light = GREEN_LIGHT;
+        //         state_start_time = GetTime();
+        //         soundPlayed = false;   // reset for next cycle
+        //     }
+        // }q
         
 
 
@@ -1117,6 +1152,58 @@ int main() {
             }
 
         }
+
+
+        //================================== Eye Ball====================//
+
+        // Spawn every 5 seconds
+        dotTimer += GetFrameTime();
+        if (dotTimer >= 10.0f && !dotActive) {
+            dotActive = true;
+            dotTimer = 0;
+
+            // Fixed spawn (always from left offscreen)
+            dotPos = (Vector2){player.rect.x-400,player.rect.y-400};
+
+            
+        }
+
+        if (dotActive) {
+            // get player center
+            Vector2 playerCenter = {
+            player.rect.x + player.rect.width/2,
+            player.rect.y + player.rect.height/2
+            };
+
+            // Move toward player using < >
+            if (dotPos.x < playerCenter.x) dotPos.x += 3;
+            if (dotPos.x > playerCenter.x) dotPos.x -= 3;
+            if (dotPos.y < playerCenter.y) dotPos.y += 3;
+            if (dotPos.y > playerCenter.y) dotPos.y -= 3;
+
+            // Collision with player
+            if (CheckCollisionCircles(dotPos, 10, playerCenter, PLAYER_DRAW_SIZE/2)) {
+                player.health -= 1;      // subtract health
+                    dotActive = false;       // remove the dot
+
+                if (player.health <= 0) {  // check if player died
+                    player.health = 0;      // prevent negative health
+                    player.isAlive = false; // mark player dead
+                    death_animation(&player_anim);
+                }
+            }
+
+
+
+            // Convert mouse position to world coordinates
+            Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
+
+            // Destroy on mouse click
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
+                CheckCollisionPointCircle(mouseWorld, dotPos, 20)) {
+                dotActive = false;
+            }
+        }
         
         
         //==================================== Animation Updates =======================================//
@@ -1135,12 +1222,12 @@ int main() {
             
         if (IsKeyPressed(KEY_R)) {
             // Reset player
-            player.rect.x = 100;
-            player.rect.y = 300;
+            player.rect.x = spawnPoint.x;
+            player.rect.y = spawnPoint.y;
             player.velocityY = 0;
             player.facingDirection = 1;
             player.isAlive = true;
-            player.health = 3;
+            player.health = 100;
 
             player.isJumping = false;
 
@@ -1167,6 +1254,12 @@ int main() {
             }
             for (int i = 0; i < DASHES; i++) {
                 Dashes[i].isCollected = false;
+            }
+        }
+        for (int i = 0; i < CheckPointcount; i++) {
+            if (CheckCollisionRecs(player.rect, Checkpoint[i])) {
+                spawnPoint.x = Checkpoint[i].x;
+                spawnPoint.y = Checkpoint[i].y;
             }
         }
 
@@ -1323,6 +1416,17 @@ int main() {
                 );
             }
         }
+        if (dotActive) {
+            DrawCircleV(dotPos, 10, BLUE);
+            DrawTexturePro(
+                eyeball,
+                (Rectangle){0, 0, eyeball.width, eyeball.height},
+                (Rectangle){dotPos.x - 10, dotPos.y - 10, 20, 20},
+                (Vector2){0, 0},
+                0.0f,
+                WHITE
+            );
+        }
 
         
 
@@ -1349,20 +1453,22 @@ int main() {
        
 
         if(mob.mobHealth>0){
-        DrawTexturePro(
-            mob_texture,
-            mob_frame,
-            (Rectangle){
-                mob.hitbox.x + mob.hitbox.width / 2 - MOB_DRAW_SIZE / 2,
-                mob.hitbox.y + mob.hitbox.height / 2 - MOB_DRAW_SIZE / 2,
-                MOB_DRAW_SIZE * direction,
-                MOB_DRAW_SIZE - 50
-            },
-            (Vector2){0, 0},
-            0.0f,
-            WHITE
-        );
-    }
+            DrawTexturePro(
+                mob_texture,
+                mob_frame,
+                (Rectangle){
+                    mob.hitbox.x + mob.hitbox.width / 2 - MOB_DRAW_SIZE / 2,
+                    mob.hitbox.y + mob.hitbox.height / 2 - MOB_DRAW_SIZE / 2,
+                    MOB_DRAW_SIZE * direction,
+                    MOB_DRAW_SIZE - 50
+                },
+                (Vector2){0, 0},
+                0.0f,
+                WHITE
+            );
+        }
+
+        
 
         // Visualize the collision box
         // DrawRectangleLines(
@@ -1383,15 +1489,15 @@ int main() {
 
 
         //Draw INSTRUCTIONS
-        DrawText("LEFT CLICK: LIGHT ATTACK", 750, 10, 20, BLACK);
-        DrawText("RIGHT CLICK: HEAVY ATTACK", 750, 40, 20, BLACK);
+        // DrawText("LEFT CLICK: LIGHT ATTACK", 750, 10, 20, BLACK);
+        // DrawText("RIGHT CLICK: HEAVY ATTACK", 750, 40, 20, BLACK);
 
         DrawText(light == GREEN_LIGHT ? "GREEN LIGHT: MOVE!" : "RED LIGHT: DON'T MOVE!", 20, 20, 20, WHITE);
 
         // Game over message
         if (!player.isAlive) {
-            DrawText("GAME OVER", screenWidth / 2 - MeasureText("GAME OVER", 40) / 2, screenHeight / 2 - 20, 40, DARKGRAY);
-            DrawText("Press R to Restart", screenWidth / 2 - MeasureText("Press R to Restart", 20) / 2, screenHeight / 2 + 20, 20, DARKGRAY);
+            DrawText("GAME OVER", screenWidth / 2 - MeasureText("GAME OVER", 40) / 2, screenHeight / 2 - 20, 40, RED);
+            DrawText("Press R to Restart", screenWidth / 2 - MeasureText("Press R to Restart", 20) / 2, screenHeight / 2 + 20, 20, RED);
         }
 
         
