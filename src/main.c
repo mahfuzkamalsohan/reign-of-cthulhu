@@ -998,7 +998,7 @@ int main() {
     };
 
     PowUpNoclip Noclips[NOCLIP] = {
-        {{200,-40, 32,32 }, false}
+        {{200,160, 32,32 }, false}
     };
 
     PowUpLevitation Levitations[LEVITATION] = {
@@ -1410,15 +1410,19 @@ int main() {
                     }
                     }
                     else{
-                        if (overlapTop < overlapBottom) {
-                            player.rect.y -= overlapTop;
-                            player.velocityY = 0;
-                            player.isJumping = false;
-                            onPlatform = true;
-                        }
-                        else {
-                            player.rect.y += overlapBottom;
-                            player.velocityY = 0;
+                        if(!player.phaseActive)
+                        {
+
+                            if (overlapTop < overlapBottom) {
+                                player.rect.y -= overlapTop;
+                                player.velocityY = 0;
+                                player.isJumping = false;
+                                onPlatform = true;
+                            }
+                            else {
+                                player.rect.y += overlapBottom;
+                                player.velocityY = 0;
+                            }
                         }
                     }
                 }
@@ -1452,8 +1456,11 @@ int main() {
 
             if ((onLeftWall || onRightWall) && !onPlatform) {        //wallslide if player touching right/left wall
                 if((onLeftWall && (player.facingDirection == 1)) || (onRightWall && (player.facingDirection == -1))){
-                player.isWallSliding = true;
-                player.isJumping = true;
+                    if(!player.phaseActive)
+                    {
+                        player.isWallSliding = true;
+                        player.isJumping = true;
+                    }
                 }
             }
             
@@ -1557,17 +1564,19 @@ int main() {
                     if (onLeftWall) player.rect.x -= 20.0f; // push left
                 }
             }
+            if(!player.phaseActive){
+                
+                if (!player.isWallSliding) {    //fast gravity downwards if not sliding (accelerated every frame)
+                    player.velocityY += GRAVITY * player.gravitySign ;
+                    player.rect.y += player.velocityY;
+                }
+                
+                else {
+                    player.velocityY = 1.0f * player.gravitySign;  // slow slide down    (constant velocity, change if necessary)
+                    player.rect.y += player.velocityY;
+                }
 
-            if (!player.isWallSliding) {    //fast gravity downwards if not sliding (accelerated every frame)
-                player.velocityY += GRAVITY * player.gravitySign ;
-                player.rect.y += player.velocityY;
             }
-            else {
-                player.velocityY = 1.0f * player.gravitySign;  // slow slide down    (constant velocity, change if necessary)
-                player.rect.y += player.velocityY;
-            }
-
-            
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !player.isAttacking) {
                 player_attack_animation1(&player_anim);
                 player.isAttacking = true;
