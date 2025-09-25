@@ -24,6 +24,8 @@
 
 #define DamageBlocks 20
 
+#define MaxMobs 11
+
 
 typedef enum AnimationType { LOOP = 1, ONESHOT = 2 } AnimationType;
 typedef enum Direction { LEFT = -1, RIGHT = 1 } Direction;
@@ -397,13 +399,85 @@ int main() {
     float laserDuration = 0.2f;  // how long laser stays on screen in seconds
     float laserTimer = 0.0f;
 
-    Mob mob = {
-        .collider = {400, 50, 200, 50},
+    Mob mob [MaxMobs]= {
+        {.collider = {400, 50, 200, 50},
         .hitbox = {400, 50, 20, 50},
         .mobHealth = 3,
         .isAlive = true,
         .isActive = false,
         .timer = EYEBALL_MOB_TIMER
+        },
+
+        {.collider = {1300, 210, 200, 50},
+        .hitbox = {1300, 210, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        },
+        {.collider = {2250, 250, 200, 50},
+        .hitbox = {2250, 250, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        },
+        {.collider = {3550, 100, 200, 50},
+        .hitbox = {3550, 100, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        },
+        {.collider = {4800, -150, 200, 50},
+        .hitbox = {4800, -150, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        },
+        {.collider = {5700, 40, 200, 50},
+        .hitbox = {5700, 40, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        },
+        {.collider = {6800, 260, 200, 50},
+        .hitbox = {6800, 260, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        },
+        {.collider = {8400, 100, 200, 50},
+        .hitbox = {8400, 100, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        },
+        {.collider = {9500, 150, 200, 50},
+        .hitbox = {9500, 150, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        },
+        {.collider = {11500, 200, 200, 50},
+        .hitbox = {11500, 200, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        },
+        {.collider = {13830, 500, 200, 50},
+        .hitbox = {13830, 500, 20, 50},
+        .mobHealth = 3,
+        .isAlive = true,
+        .isActive = false,
+        .timer = EYEBALL_MOB_TIMER
+        }
     };
 
     //BRAIN INITIALIZE
@@ -1664,18 +1738,19 @@ int platform69[4][9] = {
             //======================================Mob Section=======================================//
 
             //mob hitbox centered on collider
-            if(mob.mobHealth>0){
-            mob.hitbox.x = mob.collider.x + (mob.collider.width - mob.hitbox.width) / 2; 
-            mob.hitbox.y = mob.collider.y + mob.collider.height - mob.hitbox.height; 
-            if (CheckCollisionRecs(player.rect, mob.collider)) {
-                if (!mob.isActive) {
-                    mob.isActive = true; 
-                    mob.timer = EYEBALL_MOB_TIMER; //bug fix: activate mob on first collision 
+            for(int i=0; i<MaxMobs; i++){
+            if(mob[i].mobHealth>0){
+            mob[i].hitbox.x = mob[i].collider.x + (mob[i].collider.width - mob[i].hitbox.width) / 2; 
+            mob[i].hitbox.y = mob[i].collider.y + mob[i].collider.height - mob[i].hitbox.height; 
+            if (CheckCollisionRecs(player.rect, mob[i].collider)) {
+                if (!mob[i].isActive) {
+                    mob[i].isActive = true; 
+                    mob[i].timer = EYEBALL_MOB_TIMER; //bug fix: activate mob on first collision 
                 }
-                mob.timer -= GetFrameTime();
+                mob[i].timer -= GetFrameTime();
 
-                if(mob.timer <= 0){
-                    
+                if(mob[i].timer <= 0){
+
                     mob_attack_animation1(&mob_anim);
                     
 
@@ -1694,35 +1769,39 @@ int platform69[4][9] = {
                     } else {
                         player.rect.x -= 10; // knockback
                     }
-                    mob.timer = EYEBALL_MOB_TIMER; 
+                    mob[i].timer = EYEBALL_MOB_TIMER;
                     
                 }
             }
         }
+    
             else {
-                mob.isActive = false;
+                mob[i].isActive = false;
                 if( mob_anim.row != 0){
                     mob_idle_animation(&mob_anim);
                 }
                 
             }
-        }
+        
+        
+        
 
         //check for player attack
-        if (player.isDealingDamage && mob.isAlive && brain.isAlive) {
+        if (player.isDealingDamage && mob[i].isAlive && brain.isAlive) {
         //create an attack box larger than player hitbox
             Rectangle attackBox = player.rect;
             attackBox.width += 20.00f;
 
 
         // Check collision with mob
-            if (CheckCollisionRecs(attackBox, mob.hitbox)) {
-                mob.mobHealth--; // Damage mob
+            if (CheckCollisionRecs(attackBox, mob[i].hitbox)) {
+                mob[i].mobHealth--; // Damage mob
                 player.isDealingDamage = false; //prevents multiple damage frames
             }
 
         }
-
+    }
+        }
 
         //================================== Eye Ball====================//
 
@@ -1846,11 +1925,65 @@ int platform69[4][9] = {
             player.isDashing = false;
 
             //reset mob
-            
-            mob.mobHealth = 3;
-            mob.isAlive = true;
-            mob.isActive = false;
-            mob.timer = EYEBALL_MOB_TIMER;
+            // Reset mobs after player respawn
+        for (int i = 0; i < MaxMobs; i++) {
+         mob[i].mobHealth = 3;
+         mob[i].isAlive = true;
+         mob[i].isActive = false;
+         mob[i].timer = EYEBALL_MOB_TIMER;
+
+    // Reset collider to the original starting point
+         if (i == 0) { 
+              mob[i].collider.x = 400; 
+              mob[i].collider.y = 50; 
+         }
+          if (i == 1) { 
+             mob[i].collider.x = 1300; 
+             mob[i].collider.y = 210; 
+        }
+           if (i == 2) { 
+             mob[i].collider.x = 2250; 
+             mob[i].collider.y = 250; 
+            }
+            if (i == 3) { 
+             mob[i].collider.x = 3550; 
+             mob[i].collider.y = 100; 
+        }
+           if (i == 4) { 
+             mob[i].collider.x = 4800; 
+             mob[i].collider.y = -150; 
+            }
+             if (i == 5) { 
+             mob[i].collider.x = 5700; 
+             mob[i].collider.y = 40; 
+        }
+           if (i == 6) { 
+             mob[i].collider.x = 6800; 
+             mob[i].collider.y = 260; 
+            }
+            if (i == 7) { 
+             mob[i].collider.x = 8400; 
+             mob[i].collider.y = 100; 
+        }
+           if (i == 8) { 
+             mob[i].collider.x = 9500; 
+             mob[i].collider.y = 150; 
+            }
+             if (i == 9) { 
+             mob[i].collider.x = 11500; 
+             mob[i].collider.y = 200; 
+        }
+           if (i == 10) { 
+             mob[i].collider.x = 13830; 
+             mob[i].collider.y = 50; 
+            }
+         
+
+          // Recalculate hitbox relative to collider
+          mob[i].hitbox.x = mob[i].collider.x + (mob[i].collider.width - mob[i].hitbox.width) / 2; 
+          mob[i].hitbox.y = mob[i].collider.y + mob[i].collider.height - mob[i].hitbox.height;
+        }
+
 
             // Reset animation to idle
             idle_animation(&player_anim);
@@ -2087,18 +2220,29 @@ int platform69[4][9] = {
                                         PLAYER_DRAW_SIZE},
                             (Vector2){0, 0}, 0.0f, WHITE);
 
-                // Draw mob
-                if (mob.mobHealth > 0)
-                {
+                //Draw Mob
+                    for (int i = 0; i < MaxMobs; i++) {
+                        if (mob[i].mobHealth > 0) {
+                // Get animation frame
                     Rectangle mob_frame = animation_frame(&mob_anim, mob_max_frames, mob_num_rows, mob_texture);
-                    DrawTexturePro(mob_texture,
-                                mob_frame,
-                                (Rectangle){mob.hitbox.x + mob.hitbox.width / 2 - MOB_DRAW_SIZE / 2,
-                                            mob.hitbox.y + mob.hitbox.height / 2 - MOB_DRAW_SIZE / 2,
-                                            MOB_DRAW_SIZE * direction,
-                                            MOB_DRAW_SIZE - 50},
-                                (Vector2){0, 0}, 0.0f, WHITE);
-                }
+
+            // Draw mob based on collider, not hitbox
+                DrawTexturePro(
+                    mob_texture,
+                    mob_frame,
+                    (Rectangle){
+                    mob[i].collider.x + mob[i].collider.width / 2 - MOB_DRAW_SIZE / 2,
+                    mob[i].collider.y + mob[i].collider.height / 2 - MOB_DRAW_SIZE / 2,
+                    MOB_DRAW_SIZE * direction,
+                    MOB_DRAW_SIZE - 50
+            },
+            (Vector2){0, 0},
+            0.0f,
+            WHITE
+        );
+
+    }
+}
 
                 // Brain drawing
                 if (brain.brainHealth > 0 && worldMode == 1)
