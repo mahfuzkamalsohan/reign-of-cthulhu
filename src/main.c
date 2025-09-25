@@ -11,8 +11,8 @@
 #define JUMP_FORCE -10.0f
 #define PLAYER_SPEED 5.0f
 #define MAX_PLATFORMS 50
-#define DOUBLE_JUMPS 5
-#define DASHES 2
+#define DOUBLE_JUMPS 10
+#define DASHES 10
 #define TOTAL_TIME 120.0f // seconds (2min game timer)
 #define DASH_DISTANCE 300.0f
 #define DASH_STEP 60.0f
@@ -288,7 +288,7 @@ int main() {
 
     int cameraMode = 0; // 0 for dynamic, 1 for static
     int worldMode = 0; // 0 for overworld, 1 for boss arena
-    Vector2 spawnPoint = { 100, 100 }; 
+    Vector2 spawnPoint = { 130, 345}; 
 
     // Vector2 dotPos = {-100,-100};
     // bool dotActive = false;
@@ -461,22 +461,23 @@ int main() {
     //     {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
     //     {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
     // };
-    Rectangle teleportZoneA = { 4700, 60, 576, 256};
-    Rectangle teleportZoneB = { 4800, 500, 160, 64 };
-    Rectangle Checkpoint[CheckPointcount] = 
-    {
-        {1450,100,32,32},
-        {2550,50,32,32},
-        {4150,50,32,32},
-        {5830,130,32,32},
-        {8130, 200,32,32},
-        {9730, 100,32,32}
-    };
+    Rectangle teleportZoneA = { 6100, 60, 576, 256};  
+    Rectangle teleportZoneB = { 6200, 500, 160, 64 }; 
+    Rectangle Checkpoint[CheckPointcount]= 
+{
+    {1750,100,32,32},
+    {3600,150,32,32},
+    {5300, 50,32,32},
+    {7230, 130,32,32},
+    {9830, 100,32,32},
+    {11730, 160,32,32},
+    {12950, 0,32,32}
+};
 
     
 
     Rectangle platforms[MAX_PLATFORMS] = {
-                {100, 345, 160, 160},//1
+         {100, 345, 160, 160},//1
         {200, 280, 128, 192},//2
         {400, 100, 192, 192},//3
         {700, 150, 256, 128},//4
@@ -515,6 +516,18 @@ int main() {
         {11100, 100, 224, 128},//37
         {11500, 250, 256, 128},//38
         {11700, 160, 192, 128},//39
+        {12000, 350, 96, 128},//40
+        {12000, 600, 320, 224},//41
+        {12550, 450, 96, 192},//42
+        {12450, 200, 96,192},//43
+        {12550, -50, 96, 192},//44
+        {12900, 0, 192, 96},//45
+        {13250, -100, 256, 128},//46
+        {13800, 100, 256, 160},//47
+        {14000, 210, 160, 128},//48
+        {14400, 170, 288, 128},//49
+
+
        
 
         //BOSS ARENA WALLS
@@ -531,19 +544,8 @@ int main() {
 
         {20000, -20000-200, 96, 96}, //left small platform 1
 
-        {20000+250, -20000-200-150, 128, 96}, //left small platform 2
-        {12000, 350, 96, 128},//40
-        {12000, 600, 320, 224},//41
-        {12550, 450, 96, 192},//42
-        {12450, 200, 96,192},//43
-        {12550, -50, 96, 192},//44
-        {12900, 0, 192, 96},//45
-        {13250, -100, 256, 128},//46
-        {13800, 100, 256, 160},//47
-        {14000, 210, 160, 128},//48
-        {14400, 170, 288, 128}//49
-
-
+        {20000+250, -20000-200-150, 128, 96} //left small platform 2
+      
 
 
 
