@@ -281,6 +281,10 @@ int main() {
     int screenWidth = 1080;
     int screenHeight = 720;
 
+    const int virtualWidth = 1080;
+    const int virtualHeight = 720;
+
+
     int cameraMode = 0; // 0 for dynamic, 1 for static
     int worldMode = 0; // 0 for overworld, 1 for boss arena
     Vector2 spawnPoint = { 100, 100 }; 
@@ -298,6 +302,7 @@ int main() {
 
     
     InitWindow(screenWidth, screenHeight, "Merged Platformer + Animation");
+    RenderTexture2D target = LoadRenderTexture(virtualWidth, virtualHeight);
     const int TILE_SIZE = 32;  //each tile is 32x32 px
 
     Texture2D tileset = LoadTexture("assets/map/tileset.png");
@@ -1113,7 +1118,7 @@ int main() {
                         }
                         if(brain.brainHealth == 0){
                             brain.isAlive = false;
-                            DrawText("BRAIN DEFEATED!", screenWidth/2 - MeasureText("BRAIN DEFEATED!", 40)/2, screenHeight/2 - 20, 40, RED);
+                    
                         }
                     }
 
@@ -1777,7 +1782,8 @@ int main() {
         //====================================== BEGIN DRAWING =======================================//
 
 
-        BeginDrawing();
+        //BeginDrawing();
+        BeginTextureMode(target);
         //ClearBackground(light == GREEN_LIGHT ? SKYBLUE : RED);
       
        
@@ -1787,7 +1793,7 @@ int main() {
             DrawTexturePro(
                 boss_background,
                 (Rectangle){0, 0, boss_background.width, boss_background.height},
-                (Rectangle){0, 0, (float)screenWidth, (float)screenHeight},
+                (Rectangle){0, 0, (float)virtualWidth, (float)virtualHeight},
                 (Vector2){0, 0},
                 0.0f,
                 WHITE
@@ -1808,7 +1814,7 @@ int main() {
         DrawTexturePro(
             current_boss_tex,
             boss_frame,
-            (Rectangle){0, 0, (float)screenWidth, (float)screenHeight},
+            (Rectangle){0, 0, (float)virtualWidth, (float)virtualHeight},
             (Vector2){0, 0},
             0.0f,
             WHITE
@@ -1820,7 +1826,7 @@ int main() {
             DrawTexturePro(
                 boss_arena_background,
                 (Rectangle){0, 0, boss_arena_background.width, boss_arena_background.height},
-                (Rectangle){0, 0, (float)screenWidth, (float)screenHeight},
+                (Rectangle){0, 0, (float)virtualWidth, (float)virtualHeight},
                 (Vector2){0, 0},
                 0.0f,
                 WHITE
@@ -2071,16 +2077,16 @@ int main() {
             {
                 // 1. Update brain movement & collisions here ...
 
-                // 2. Draw brain health bar at top
-                int maxHealth = 10;
-                float barWidth = 400;
-                float barHeight = 25;
-                float barX = screenWidth / 2 - barWidth/2;
-                float barY = 20;
-                float currentWidth = (brain.brainHealth / (float)maxHealth) * barWidth;
-                DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY); // background
-                DrawRectangle(barX, barY, currentWidth, barHeight, RED);   // current health
-                DrawRectangleLines(barX, barY, barWidth, barHeight, BLACK); // border
+                // // 2. Draw brain health bar at top
+                // int maxHealth = 10;
+                // float barWidth = 400;
+                // float barHeight = 25;
+                // float barX = virtualWidth / 2 - barWidth/2;
+                // float barY = 20;
+                // float currentWidth = (brain.brainHealth / (float)maxHealth) * barWidth;
+                // DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY); // background
+                // DrawRectangle(barX, barY, currentWidth, barHeight, RED);   // current health
+                // DrawRectangleLines(barX, barY, barWidth, barHeight, BLACK); // border
 
                 // Brain center and radius
                                 // Brain center
@@ -2159,13 +2165,56 @@ int main() {
         }
         
 
-        // Game over message
-        if (!player.isAlive) {
-            DrawText("GAME OVER", screenWidth / 2 - MeasureText("GAME OVER", 40) / 2, screenHeight / 2 - 20, 40, RED);
-            DrawText("Press R to Restart", screenWidth / 2 - MeasureText("Press R to Restart", 20) / 2, screenHeight / 2 + 20, 20, RED);
-        }
+        
 
         
+        //EndDrawing();
+        EndTextureMode();
+        BeginDrawing();
+            ClearBackground(BLACK);
+            
+            float scale = (float)GetScreenHeight() / virtualHeight;
+            int scaledWidth = (int)(virtualWidth * scale);
+            int scaledHeight = (int)(virtualHeight * scale);
+            int offsetX = (GetScreenWidth() - scaledWidth) / 2;
+            int offsetY = (GetScreenHeight() - scaledHeight) / 2;
+
+            DrawTexturePro(
+                target.texture,
+                (Rectangle){ 0, 0, (float)target.texture.width, -(float)target.texture.height },
+                (Rectangle){ offsetX, offsetY, scaledWidth, scaledHeight },
+                (Vector2){ 0, 0 },
+                0.0f,
+                WHITE
+            );
+
+            //=========================================== HUD ==============================================================
+            
+            // Player health
+            DrawText(TextFormat("Health: %d", player.health), 20, 20, 30, WHITE);
+
+            // Brain health bar
+            if(worldMode == 1 && brain.brainHealth > 0){
+                int maxHealth = 100;
+                float barWidth = 400;
+                float barHeight = 25;
+                float barX = GetScreenWidth()/2 - barWidth/2; // center on real screen
+                float barY = 20;
+                float currentWidth = (brain.brainHealth / (float)maxHealth) * barWidth;
+                DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY);
+                DrawRectangle(barX, barY, currentWidth, barHeight, RED);
+                DrawRectangleLines(barX, barY, barWidth, barHeight, BLACK);
+            }
+
+            // Game over
+            if(!player.isAlive){
+                DrawText("GAME OVER",
+                        GetScreenWidth()/2 - MeasureText("GAME OVER",40)/2,
+                        GetScreenHeight()/2 - 20, 40, RED);
+                DrawText("Press R to Restart",
+                        GetScreenWidth()/2 - MeasureText("Press R to Restart",20)/2,
+                        GetScreenHeight()/2 + 20, 20, RED);
+            }
         EndDrawing();
     }
 
