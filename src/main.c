@@ -314,6 +314,7 @@ int main() {
     const int TILE_SIZE = 32;  //each tile is 32x32 px
 
     Texture2D tileset = LoadTexture("assets/map/tileset.png");
+    Texture2D teleporter_texture = LoadTexture("assets/map/teleporter.png");
     Texture2D wizard_texture = LoadTexture("assets/npc/wizard.png");
     Texture2D laser_texture = LoadTexture("assets/hero/laser.png");
     Texture2D brain_texture = LoadTexture("assets/boss/brain.png");
@@ -2013,7 +2014,7 @@ dots[i].timer = 0;
                 DrawTilemap(tileset, 4, 7, platform18, 3800, 100, TILE_SIZE);
                 DrawTilemap(tileset, 5, 5, platform19, 4100, 50, TILE_SIZE);
                 DrawTilemap(tileset, 4, 6, platform20, 4400, 90, TILE_SIZE);
-                DrawTilemap(tileset, 8, 18, platform21, 4700, 60, TILE_SIZE);
+                DrawTilemap(tileset, 8, 18, platform21, 4700, 60, TILE_SIZE);// teleporter platform
                 DrawTilemap(tileset, 7, 10, platform22, 5400, 310, TILE_SIZE);
                 DrawTilemap(tileset, 5, 8, platform23, 5800, 130, TILE_SIZE); //wizard platform
                 DrawTilemap(tileset, 2, 5, platform24, 4800, 500, TILE_SIZE);
@@ -2052,7 +2053,13 @@ dots[i].timer = 0;
                 DrawTilemap(boss_arena_tileset, 3, 4, platform44, 20000+250, -20000-200-150, TILE_SIZE);
 
 
-                
+                //Draw Teleporter
+                DrawTexturePro(
+                    teleporter_texture,
+                    (Rectangle){0, 0, teleporter_texture.width, teleporter_texture.height},
+                    (Rectangle){4700, 60-60, 64, 64},
+                    (Vector2){0, 0}, 0.0f, WHITE
+                );
 
                 //Draw NPC
                 DrawTexturePro(
