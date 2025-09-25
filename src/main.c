@@ -2285,6 +2285,9 @@ dots[i].timer = 0;
             DrawRectangleRec(playButton, GRAY);
             DrawRectangleRec(playButton2, GRAY);
             DrawRectangleRec(quitbutton, GRAY);
+            DrawText("REIGN OF CTHULHU",
+                     GetScreenWidth()/2 - MeasureText("REIGN OF CTHULHU", 40)/2,
+                     GetScreenHeight()/2 - 200, 40, DARKBLUE);
             DrawText("LEVEL 1", playButton.x + 10, playButton.y + 10, 20, BLACK);
             DrawText("LEVEL 2", playButton2.x + 10, playButton2.y + 10, 20, BLACK);
             DrawText("QUIT", quitbutton.x + 20, quitbutton.y + 10, 20, BLACK);
