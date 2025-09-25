@@ -978,6 +978,12 @@ int main() {
 
     float gravityTimer = 0.0f;
 
+    Rectangle playButton = { 475, 250, 100, 50 };
+    bool gamestarted = false;
+
+    Rectangle quitbutton = {475, 450, 100, 50};
+
+
 
 
 
@@ -1037,7 +1043,19 @@ int main() {
 
         float dt = GetFrameTime();
         double elapsed = GetTime() - state_start_time;
-        if (player.isAlive) {
+
+        Vector2 mousePoint = GetMousePosition();
+
+        if (CheckCollisionPointRec(mousePoint, playButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            gamestarted = !gamestarted; 
+        }
+        if (CheckCollisionPointRec(mousePoint, quitbutton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            return 0;
+        }
+        
+        if (player.isAlive && gamestarted) {
 
 
             if(worldMode == 1) // if in boss arena
@@ -1714,9 +1732,11 @@ int main() {
             // Reset world mode
             worldMode = 0; //overworld
             
+            
             // Reset player
             player.rect.x = spawnPoint.x;
             player.rect.y = spawnPoint.y;
+            player.gravitySign = 1;
             player.velocityY = 0;
             player.facingDirection = 1;
             player.isAlive = true;
@@ -1748,6 +1768,9 @@ int main() {
             }
             for (int i = 0; i < DASHES; i++) {
                 Dashes[i].isCollected = false;
+            }
+            for( int i=0 ; i<LEVITATION; i++){
+                Levitations[i].isCollected = false;
             }
         }
         for (int i = 0; i < CheckPointcount; i++) {
@@ -1782,122 +1805,119 @@ int main() {
         //====================================== BEGIN DRAWING =======================================//
 
 
-        //BeginDrawing();
+        
+       
+        
         BeginTextureMode(target);
-        //ClearBackground(light == GREEN_LIGHT ? SKYBLUE : RED);
-      
-       
+        ClearBackground(RAYWHITE);
+
         // Draw Worlds
-        if(worldMode == 0) //overworld
+        if (gamestarted)
         {
-            DrawTexturePro(
-                boss_background,
-                (Rectangle){0, 0, boss_background.width, boss_background.height},
-                (Rectangle){0, 0, (float)virtualWidth, (float)virtualHeight},
-                (Vector2){0, 0},
-                0.0f,
-                WHITE
-            );
-        }
-        
-       
+            if (player.isAlive)
+            {
+                // Overworld background
+                if (worldMode == 0)
+                {
+                    DrawTexturePro(
+                        boss_background,
+                        (Rectangle){0, 0, boss_background.width, boss_background.height},
+                        (Rectangle){0, 0, (float)virtualWidth, (float)virtualHeight},
+                        (Vector2){0, 0},
+                        0.0f,
+                        WHITE
+                    );
 
-       
+                    // Boss animation overlay
+                    Texture2D current_boss_tex = (light == GREEN_LIGHT) ? boss_sleep_texture : boss_awake_texture;
+                    Rectangle boss_frame = animation_frame(&boss_anim, boss_max_frames, boss_num_rows, current_boss_tex);
+                    DrawTexturePro(
+                        current_boss_tex,
+                        boss_frame,
+                        (Rectangle){0, 0, (float)virtualWidth, (float)virtualHeight},
+                        (Vector2){0, 0},
+                        0.0f,
+                        WHITE
+                    );
+                }
 
+                // Boss arena background
+                if (worldMode == 1)
+                {
+                    DrawTexturePro(
+                        boss_arena_background,
+                        (Rectangle){0, 0, boss_arena_background.width, boss_arena_background.height},
+                        (Rectangle){0, 0, (float)virtualWidth, (float)virtualHeight},
+                        (Vector2){0, 0},
+                        0.0f,
+                        WHITE
+                    );
+                }
 
+                // Begin camera 2D mode
+                BeginMode2D(camera);
 
-
-        Texture2D current_boss_tex = (light == GREEN_LIGHT) ? boss_sleep_texture : boss_awake_texture;
-        Rectangle boss_frame = animation_frame(&boss_anim, boss_max_frames, boss_num_rows, current_boss_tex);
-
-        // Example 1: full-screen overlay (matches background)
-        DrawTexturePro(
-            current_boss_tex,
-            boss_frame,
-            (Rectangle){0, 0, (float)virtualWidth, (float)virtualHeight},
-            (Vector2){0, 0},
-            0.0f,
-            WHITE
-        );
-
-
-        if(worldMode == 1) //boss arena
-        {
-            DrawTexturePro(
-                boss_arena_background,
-                (Rectangle){0, 0, boss_arena_background.width, boss_arena_background.height},
-                (Rectangle){0, 0, (float)virtualWidth, (float)virtualHeight},
-                (Vector2){0, 0},
-                0.0f,
-                WHITE
-            );
-        }
-        
-        
-
-        BeginMode2D(camera);
-        
-
-        DrawTilemap(tileset, 5, 5, platform1, 100, 345, TILE_SIZE);
-        DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE); //{200, 280, 128, 192},
-        DrawTilemap(tileset, 6, 6, platform3, 400, 100, TILE_SIZE);
-        DrawTilemap(tileset, 4, 8, platform4, 700, 150, TILE_SIZE);
-        DrawTilemap(tileset, 4, 8, platform5, 900, 250, TILE_SIZE);
-        DrawTilemap(tileset, 5, 5, platform6, 1200, 260, TILE_SIZE);
-        DrawTilemap(tileset, 5, 6, platform7, 1400, 100, TILE_SIZE);
-        DrawTilemap(tileset, 5, 5, platform8, 1700, 200, TILE_SIZE);
-        DrawTilemap(tileset, 5, 5, platform9, 1840, 300, TILE_SIZE);
-        DrawTilemap(tileset, 5, 6, platform10, 2100, 250, TILE_SIZE);
-        DrawTilemap(tileset, 4, 5, platform11, 2300, 200, TILE_SIZE);
-        DrawTilemap(tileset, 4, 8, platform12, 2500, 50, TILE_SIZE);
-        DrawTilemap(tileset, 5, 6, platform13, 2800, 150, TILE_SIZE);
-        DrawTilemap(tileset, 5, 5, platform14, 3150, 180, TILE_SIZE);
-        DrawTilemap(tileset, 4, 5, platform15, 3350, 100, TILE_SIZE);
-        DrawTilemap(tileset, 3, 4, platform16, 3500, 140, TILE_SIZE);
-        DrawTilemap(tileset, 3, 6, platform17, 3700, 220, TILE_SIZE);
-        DrawTilemap(tileset, 4, 7, platform18, 3800, 100, TILE_SIZE);
-        DrawTilemap(tileset, 5, 5, platform19, 4100, 50, TILE_SIZE);
-        DrawTilemap(tileset, 4, 6, platform20, 4400, 90, TILE_SIZE);
-        DrawTilemap(tileset, 8, 18, platform21, 4700, 60, TILE_SIZE);
-        DrawTilemap(tileset, 7, 10, platform22, 5400, 310, TILE_SIZE);
-        DrawTilemap(tileset, 5, 8, platform23, 5800, 130, TILE_SIZE);
-        DrawTilemap(tileset, 2, 5, platform24, 4800, 500, TILE_SIZE);
-        DrawTilemap(tileset, 4, 6, platform25, 6100, 400, TILE_SIZE);
-        DrawTilemap(tileset, 3, 4, platform26, 6400, 300, TILE_SIZE);
-        DrawTilemap(tileset, 3, 5, platform27, 6700, 400, TILE_SIZE);
-        DrawTilemap(tileset, 4, 8, platform28, 7000, 150, TILE_SIZE);
-        DrawTilemap(tileset, 3, 5, platform29, 7170, 190, TILE_SIZE);
-        DrawTilemap(tileset, 4, 8, platform30, 7500, 350, TILE_SIZE);
-        DrawTilemap(tileset, 4, 8, platform31, 7670, 280, TILE_SIZE);
-        DrawTilemap(tileset, 4, 6, platform32, 8100, 200, TILE_SIZE);
-        DrawTilemap(tileset, 4, 5, platform33, 8400, 100, TILE_SIZE);
-        DrawTilemap(tileset, 4, 8, platform34, 8700, 250, TILE_SIZE);
-        DrawTilemap(tileset, 3, 5, platform35, 8900, 300, TILE_SIZE);
-        DrawTilemap(tileset, 4, 6, platform36, 9300, 200, TILE_SIZE);
-        DrawTilemap(tileset, 4, 7, platform37, 9700, 100, TILE_SIZE);
-        DrawTilemap(tileset, 4, 8, platform38, 10100, 250, TILE_SIZE);
-        DrawTilemap(tileset, 4, 6, platform39, 10300, 160, TILE_SIZE);
-    
+                // Draw tilemaps
+                DrawTilemap(tileset, 5, 5, platform1, 100, 345, TILE_SIZE);
+                DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE); //{200, 280, 128, 192},
+                DrawTilemap(tileset, 6, 6, platform3, 400, 100, TILE_SIZE);
+                DrawTilemap(tileset, 4, 8, platform4, 700, 150, TILE_SIZE);
+                DrawTilemap(tileset, 4, 8, platform5, 900, 250, TILE_SIZE);
+                DrawTilemap(tileset, 5, 5, platform6, 1200, 260, TILE_SIZE);
+                DrawTilemap(tileset, 5, 6, platform7, 1400, 100, TILE_SIZE);
+                DrawTilemap(tileset, 5, 5, platform8, 1700, 200, TILE_SIZE);
+                DrawTilemap(tileset, 5, 5, platform9, 1840, 300, TILE_SIZE);
+                DrawTilemap(tileset, 5, 6, platform10, 2100, 250, TILE_SIZE);
+                DrawTilemap(tileset, 4, 5, platform11, 2300, 200, TILE_SIZE);
+                DrawTilemap(tileset, 4, 8, platform12, 2500, 50, TILE_SIZE);
+                DrawTilemap(tileset, 5, 6, platform13, 2800, 150, TILE_SIZE);
+                DrawTilemap(tileset, 5, 5, platform14, 3150, 180, TILE_SIZE);
+                DrawTilemap(tileset, 4, 5, platform15, 3350, 100, TILE_SIZE);
+                DrawTilemap(tileset, 3, 4, platform16, 3500, 140, TILE_SIZE);
+                DrawTilemap(tileset, 3, 6, platform17, 3700, 220, TILE_SIZE);
+                DrawTilemap(tileset, 4, 7, platform18, 3800, 100, TILE_SIZE);
+                DrawTilemap(tileset, 5, 5, platform19, 4100, 50, TILE_SIZE);
+                DrawTilemap(tileset, 4, 6, platform20, 4400, 90, TILE_SIZE);
+                DrawTilemap(tileset, 8, 18, platform21, 4700, 60, TILE_SIZE);
+                DrawTilemap(tileset, 7, 10, platform22, 5400, 310, TILE_SIZE);
+                DrawTilemap(tileset, 5, 8, platform23, 5800, 130, TILE_SIZE);
+                DrawTilemap(tileset, 2, 5, platform24, 4800, 500, TILE_SIZE);
+                DrawTilemap(tileset, 4, 6, platform25, 6100, 400, TILE_SIZE);
+                DrawTilemap(tileset, 3, 4, platform26, 6400, 300, TILE_SIZE);
+                DrawTilemap(tileset, 3, 5, platform27, 6700, 400, TILE_SIZE);
+                DrawTilemap(tileset, 4, 8, platform28, 7000, 150, TILE_SIZE);
+                DrawTilemap(tileset, 3, 5, platform29, 7170, 190, TILE_SIZE);
+                DrawTilemap(tileset, 4, 8, platform30, 7500, 350, TILE_SIZE);
+                DrawTilemap(tileset, 4, 8, platform31, 7670, 280, TILE_SIZE);
+                DrawTilemap(tileset, 4, 6, platform32, 8100, 200, TILE_SIZE);
+                DrawTilemap(tileset, 4, 5, platform33, 8400, 100, TILE_SIZE);
+                DrawTilemap(tileset, 4, 8, platform34, 8700, 250, TILE_SIZE);
+                DrawTilemap(tileset, 3, 5, platform35, 8900, 300, TILE_SIZE);
+                DrawTilemap(tileset, 4, 6, platform36, 9300, 200, TILE_SIZE);
+                DrawTilemap(tileset, 4, 7, platform37, 9700, 100, TILE_SIZE);
+                DrawTilemap(tileset, 4, 8, platform38, 10100, 250, TILE_SIZE);
+                DrawTilemap(tileset, 4, 6, platform39, 10300, 160, TILE_SIZE);
+            
 
 
 
-     
-        // BOSS ARENA WALLS
-       
-        DrawTilemap(boss_arena_tileset, 32, 32, platform40, 20000, -20000, TILE_SIZE);
-        DrawTilemap(boss_arena_tileset, 32, 32, platform41, 20000-1024, -20000-1024+200, TILE_SIZE);
-        
-        DrawTilemap(boss_arena_tileset, 32, 32, platform42, 20000+1024, -20000-1024+200, TILE_SIZE);
-        
-        DrawTilemap(boss_arena_tileset, 3, 3, platform43, 20000+928, -20000-200, TILE_SIZE);
-        DrawTilemap(boss_arena_tileset, 3, 4, platform44, 20000+928-300, -20000-200-150, TILE_SIZE);
-        //{20000+928-300, -20000-200-150, 96, 128}
+            
+                // BOSS ARENA WALLS
+            
+                DrawTilemap(boss_arena_tileset, 32, 32, platform40, 20000, -20000, TILE_SIZE);
+                DrawTilemap(boss_arena_tileset, 32, 32, platform41, 20000-1024, -20000-1024+200, TILE_SIZE);
+                
+                DrawTilemap(boss_arena_tileset, 32, 32, platform42, 20000+1024, -20000-1024+200, TILE_SIZE);
+                
+                DrawTilemap(boss_arena_tileset, 3, 3, platform43, 20000+928, -20000-200, TILE_SIZE);
+                DrawTilemap(boss_arena_tileset, 3, 4, platform44, 20000+928-300, -20000-200-150, TILE_SIZE);
+                //{20000+928-300, -20000-200-150, 96, 128}
 
-        DrawTilemap(boss_arena_tileset, 3, 3, platform43, 20000, -20000-200, TILE_SIZE);
-        DrawTilemap(boss_arena_tileset, 3, 4, platform44, 20000+250, -20000-200-150, TILE_SIZE);
+                DrawTilemap(boss_arena_tileset, 3, 3, platform43, 20000, -20000-200, TILE_SIZE);
+                DrawTilemap(boss_arena_tileset, 3, 4, platform44, 20000+250, -20000-200-150, TILE_SIZE);
 
 
-        
+                
 
         
         
@@ -1910,312 +1930,155 @@ int main() {
 
         
 
+                // Draw damage block
+                DrawRectangleRec(damageBlock, MAROON);
 
+                // Draw collectibles
+                for (int i = 0; i < DOUBLE_JUMPS; i++)
+                {
+                    if (!Djumps[i].isCollected)
+                    {
+                        DrawTexturePro(double_jump_texture,
+                                    (Rectangle){0, 0, double_jump_texture.width, double_jump_texture.height},
+                                    Djumps[i].rect,
+                                    (Vector2){0, 0}, 0.0f, WHITE);
+                    }
+                }
 
-        // Draw damage block
-        DrawRectangleRec(damageBlock, MAROON);
+                for (int i = 0; i < DASHES; i++)
+                {
+                    if (!Dashes[i].isCollected)
+                    {
+                        DrawTexturePro(dash_texture,
+                                    (Rectangle){0, 0, dash_texture.width, dash_texture.height},
+                                    Dashes[i].rect,
+                                    (Vector2){0, 0}, 0.0f, WHITE);
+                    }
+                }
 
-        //DrawRectangleRec(mob.collider, DARKPURPLE);
-        //DrawRectangleRec(mob.hitbox, PURPLE);
+                for (int i = 0; i < LEVITATION; i++)
+                {
+                    if (!Levitations[i].isCollected)
+                    {
+                        DrawTexturePro(levitation_texture,
+                                    (Rectangle){0, 0, levitation_texture.width, levitation_texture.height},
+                                    Levitations[i].rect,
+                                    (Vector2){0, 0}, 0.0f, WHITE);
+                    }
+                }
 
-        //Draw double jumps
-        for (int i = 0; i < DOUBLE_JUMPS; i++) {
-            if (Djumps[i].isCollected == false) {
-                //DrawRectangleRec(Djumps[i].rect, RED);
-                DrawTexturePro(
-                    double_jump_texture,
-                    (Rectangle){0, 0, double_jump_texture.width, double_jump_texture.height},
-                    Djumps[i].rect,
-                    (Vector2){0, 0},
-                    0.0f,
-                    WHITE
-                );
+                // Draw player
+                Rectangle frame = animation_frame(&player_anim, max_frames, num_rows, player_texture);
+                frame.width *= direction;
+                DrawTexturePro(player_texture,
+                            frame,
+                            (Rectangle){player.rect.x + player.rect.width / 2 - PLAYER_DRAW_SIZE / 2,
+                                        player.rect.y + player.rect.height / 2 - PLAYER_DRAW_SIZE / 2,
+                                        PLAYER_DRAW_SIZE * direction,
+                                        PLAYER_DRAW_SIZE},
+                            (Vector2){0, 0}, 0.0f, WHITE);
+
+                // Draw mob
+                if (mob.mobHealth > 0)
+                {
+                    Rectangle mob_frame = animation_frame(&mob_anim, mob_max_frames, mob_num_rows, mob_texture);
+                    DrawTexturePro(mob_texture,
+                                mob_frame,
+                                (Rectangle){mob.hitbox.x + mob.hitbox.width / 2 - MOB_DRAW_SIZE / 2,
+                                            mob.hitbox.y + mob.hitbox.height / 2 - MOB_DRAW_SIZE / 2,
+                                            MOB_DRAW_SIZE * direction,
+                                            MOB_DRAW_SIZE - 50},
+                                (Vector2){0, 0}, 0.0f, WHITE);
+                }
+
+                // Brain drawing
+                if (brain.brainHealth > 0 && worldMode == 1)
+                {
+                    Vector2 brainCenter = {brain.position.x + brain.position.width / 2,
+                                        brain.position.y + brain.position.height / 2};
+
+                    DrawTexturePro(brain_texture,
+                                (Rectangle){0, 0, brain_texture.width, brain_texture.height},
+                                (Rectangle){brainCenter.x - brain_texture.width / 2,
+                                            brainCenter.y - brain_texture.height / 2,
+                                            brain_texture.width,
+                                            brain_texture.height},
+                                (Vector2){0, 0}, 0.0f, WHITE);
+                }
+
+                // Draw laser
+                if (laserActive)
+                    DrawRectangleRec(laserRect, WHITE);
+                if (laserActive && brain.isAlive)
+                {
+                    Vector2 brainCenter = {brain.position.x + brain.position.width / 2,
+                                        brain.position.y + brain.position.height / 2};
+                    float brainRadius = brain.position.width / 2;
+                    if (CheckCollisionCircleRec(brainCenter, brainRadius, laserRect))
+                        if (brain.brainHealth > 0) brain.brainHealth--;
+                }
+
+                EndMode2D(); // End camera mode
             }
-        }
+        } // player.isAlive & gamestarted
 
-
-        //draw dashes
-        for (int i = 0; i < DASHES; i++) {
-            if (Dashes[i].isCollected == false) {
-                DrawTexturePro(
-                    dash_texture,
-                    (Rectangle){0, 0, dash_texture.width, dash_texture.height},
-                    Dashes[i].rect,
-                    (Vector2){0, 0},
-                    0.0f,
-                    WHITE
-                );
-            }
-        }
-        
-        if (dotActive) {
-            DrawCircleV(dotPos, 10, BLUE);
-            DrawTexturePro(
-                eyeball,
-                (Rectangle){0, 0, eyeball.width, eyeball.height},
-                (Rectangle){dotPos.x - 10, dotPos.y - 10, 20, 20},
-                (Vector2){0, 0},
-                0.0f,
-                WHITE
-            );
-        }
-
-
-        //draw levitation
-        // for (int i = 0; i < LEVITATION; i++) {
-        //    if (!Levitations[i].isCollected) {
-        //     DrawRectangleRec(Levitations[i].rect, RED);
-        //     }
-        // }
-        for (int i = 0; i < LEVITATION; i++) {
-            if (Levitations[i].isCollected == false) {
-                DrawTexturePro(
-                    levitation_texture,
-                    (Rectangle){0, 0, levitation_texture.width, levitation_texture.height},
-                    Levitations[i].rect,
-                    (Vector2){0, 0},
-                    0.0f,
-                    WHITE
-                );
-            }
-        }
-
-     
-        Rectangle frame = animation_frame(&player_anim, max_frames, num_rows, player_texture);
-        frame.width *= direction;
-
-        DrawTexturePro(
-            player_texture,
-            frame,
-            (Rectangle){
-                player.rect.x + player.rect.width / 2 - PLAYER_DRAW_SIZE / 2,
-                player.rect.y + player.rect.height / 2 - PLAYER_DRAW_SIZE / 2,
-                PLAYER_DRAW_SIZE * direction,
-                PLAYER_DRAW_SIZE
-            },
-            (Vector2){0, 0},
-            0.0f,
-            WHITE
-        );
-        
-        
-        Rectangle mob_frame = animation_frame(&mob_anim, mob_max_frames, mob_num_rows, mob_texture);
-       
-
-        if(mob.mobHealth>0){
-            DrawTexturePro(
-                mob_texture,
-                mob_frame,
-                (Rectangle){
-                    mob.hitbox.x + mob.hitbox.width / 2 - MOB_DRAW_SIZE / 2,
-                    mob.hitbox.y + mob.hitbox.height / 2 - MOB_DRAW_SIZE / 2,
-                    MOB_DRAW_SIZE * direction,
-                    MOB_DRAW_SIZE - 50
-                },
-                (Vector2){0, 0},
-                0.0f,
-                WHITE
-            );
-        }
-
-
-        //BRAIN DRAW
-        // if (brain.brainHealth > 0) {
-        //     Vector2 brainCenter = {
-        //         brain.position.x + brain.position.width / 2,
-        //         brain.position.y + brain.position.height / 2
-        //     };
-        //     float brainRadius = brain.position.width / 2;  // or any radius you want
-        //     DrawCircleV(brainCenter, brainRadius, RED);
-        // }
-
-        // --- Draw laser ---
-        if (laserActive)
-        {
-            DrawRectangleRec(laserRect, WHITE);
-            // DrawTexturePro(
-            //     laser_texture,
-            //     (Rectangle){0, 0, laser_texture.width, laser_texture.height},
-            //     laserRect,
-            //     (Vector2){0, 0},
-            //     0.0f,
-            //     WHITE
-            // );
-        }
-
-        if (laserActive && brain.isAlive)
-        {
-            Vector2 brainCenter = {
-                brain.position.x + brain.position.width/2,
-                brain.position.y + brain.position.height/2
-            };
-            float brainRadius = brain.position.width/2;
-
-            if (CheckCollisionCircleRec(brainCenter, brainRadius, laserRect))
-            {
-                if (brain.brainHealth > 0) brain.brainHealth--;
-            }
-        }
-
-        
-
-       
-
-
-
-        
-
-        // Visualize the collision box
-        // DrawRectangleLines(
-        //     (int)player.rect.x,
-        //     (int)player.rect.y,
-        //     (int)player.rect.width,
-        //     (int)player.rect.height,
-        //     GREEN  // Pick any color
-        // );
-         if (brain.brainHealth > 0 && worldMode == 1)  // Only draw in boss arena and if brain is alive
-            {
-                // 1. Update brain movement & collisions here ...
-
-                // // 2. Draw brain health bar at top
-                // int maxHealth = 10;
-                // float barWidth = 400;
-                // float barHeight = 25;
-                // float barX = virtualWidth / 2 - barWidth/2;
-                // float barY = 20;
-                // float currentWidth = (brain.brainHealth / (float)maxHealth) * barWidth;
-                // DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY); // background
-                // DrawRectangle(barX, barY, currentWidth, barHeight, RED);   // current health
-                // DrawRectangleLines(barX, barY, barWidth, barHeight, BLACK); // border
-
-                // Brain center and radius
-                                // Brain center
-                Vector2 brainCenter = {
-                    brain.position.x + brain.position.width / 2,
-                    brain.position.y + brain.position.height / 2
-                };
-                float brainRadius = brain.position.width / 2;
-
-                // Draw the red circle first
-                //DrawCircleV(brainCenter, brainRadius, RED);
-
-                // Draw the texture on top, centered
-                DrawTexturePro(
-                    brain_texture,
-                    (Rectangle){0, 0, brain_texture.width, brain_texture.height},    // source rectangle (full texture)
-                    (Rectangle){
-                        brainCenter.x - brain_texture.width / 2,                      // destination x
-                        brainCenter.y - brain_texture.height / 2,                     // destination y
-                        brain_texture.width,                                          // width
-                        brain_texture.height                                          // height
-                    },
-                    (Vector2){0, 0},                                                 // origin top-left
-                    0.0f,                                                             // rotation
-                    WHITE                                                             // tint
-                );
-
-
-
-
-            }
-
-        
-
-
-        EndMode2D();
-
-        //Draw player health
-        DrawText(TextFormat("Health: %d", player.health), 500, 10, 20, WHITE);
-
-        char coordText[64];
-        sprintf(coordText, "X: %.2f  Y: %.2f", player.rect.x, player.rect.y);
-        DrawText(coordText, 20, 40, 10, BLACK);
-
-
-        if(worldMode == 1) //boss arena
-        {
-            int maxBrainHealth = 100;                  // max health of the brain
-            float barWidth = 400;                      // full bar width
-            float barHeight = 25;                      // height of the bar
-            float barX = screenWidth / 2 - barWidth/2; // center horizontally
-            float barY = 20;                           // distance from top
-
-            // current health width
-            float currentWidth = (brain.brainHealth / (float)maxBrainHealth) * barWidth;
-
-            // draw background (empty bar)
-            DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY);
-
-            // draw current health (filled portion)
-            DrawRectangle(barX, barY, currentWidth, barHeight, RED);
-
-            // optional border
-            DrawRectangleLines(barX, barY, barWidth, barHeight, BLACK);
-
-
-        }
-       
-        //Draw INSTRUCTIONS
-        // DrawText("LEFT CLICK: LIGHT ATTACK", 750, 10, 20, BLACK);
-        // DrawText("RIGHT CLICK: HEAVY ATTACK", 750, 40, 20, BLACK);
-
-        if(worldMode == 0) //overworld
-        {
-            DrawText(light == GREEN_LIGHT ? "GREEN LIGHT: MOVE!" : "RED LIGHT: DON'T MOVE!", 20, 20, 20, WHITE);
-        }
-        
-
-        
-
-        
-        //EndDrawing();
         EndTextureMode();
+
+        // Draw to screen
         BeginDrawing();
-            ClearBackground(BLACK);
-            
-            float scale = (float)GetScreenHeight() / virtualHeight;
-            int scaledWidth = (int)(virtualWidth * scale);
-            int scaledHeight = (int)(virtualHeight * scale);
-            int offsetX = (GetScreenWidth() - scaledWidth) / 2;
-            int offsetY = (GetScreenHeight() - scaledHeight) / 2;
+        ClearBackground(BLACK);
 
-            DrawTexturePro(
-                target.texture,
-                (Rectangle){ 0, 0, (float)target.texture.width, -(float)target.texture.height },
-                (Rectangle){ offsetX, offsetY, scaledWidth, scaledHeight },
-                (Vector2){ 0, 0 },
-                0.0f,
-                WHITE
-            );
+        float scale = (float)GetScreenHeight() / virtualHeight;
+        int scaledWidth = (int)(virtualWidth * scale);
+        int scaledHeight = (int)(virtualHeight * scale);
+        int offsetX = (GetScreenWidth() - scaledWidth) / 2;
+        int offsetY = (GetScreenHeight() - scaledHeight) / 2;
 
-            //=========================================== HUD ==============================================================
-            
-            // Player health
-            DrawText(TextFormat("Health: %d", player.health), 20, 20, 30, WHITE);
+        DrawTexturePro(target.texture,
+                    (Rectangle){0, 0, (float)target.texture.width, -(float)target.texture.height},
+                    (Rectangle){offsetX, offsetY, scaledWidth, scaledHeight},
+                    (Vector2){0, 0}, 0.0f, WHITE);
 
-            // Brain health bar
-            if(worldMode == 1 && brain.brainHealth > 0){
-                int maxHealth = 100;
-                float barWidth = 400;
-                float barHeight = 25;
-                float barX = GetScreenWidth()/2 - barWidth/2; // center on real screen
-                float barY = 20;
-                float currentWidth = (brain.brainHealth / (float)maxHealth) * barWidth;
-                DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY);
-                DrawRectangle(barX, barY, currentWidth, barHeight, RED);
-                DrawRectangleLines(barX, barY, barWidth, barHeight, BLACK);
-            }
+        // HUD
+        DrawText(TextFormat("Health: %d", player.health), 20, 20, 30, WHITE);
 
-            // Game over
-            if(!player.isAlive){
-                DrawText("GAME OVER",
-                        GetScreenWidth()/2 - MeasureText("GAME OVER",40)/2,
-                        GetScreenHeight()/2 - 20, 40, RED);
-                DrawText("Press R to Restart",
-                        GetScreenWidth()/2 - MeasureText("Press R to Restart",20)/2,
-                        GetScreenHeight()/2 + 20, 20, RED);
-            }
+        if (worldMode == 1 && brain.brainHealth > 0)
+        {
+            int maxHealth = 100;
+            float barWidth = 400;
+            float barHeight = 25;
+            float barX = GetScreenWidth() / 2 - barWidth / 2;
+            float barY = 20;
+            float currentWidth = (brain.brainHealth / (float)maxHealth) * barWidth;
+            DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY);
+            DrawRectangle(barX, barY, currentWidth, barHeight, RED);
+            DrawRectangleLines(barX, barY, barWidth, barHeight, BLACK);
+        }
+
+        // Game over
+        if (!player.isAlive)
+        {
+            DrawText("GAME OVER",
+                    GetScreenWidth() / 2 - MeasureText("GAME OVER", 40) / 2,
+                    GetScreenHeight() / 2 - 20, 40, RED);
+            DrawText("Press R to Restart",
+                    GetScreenWidth() / 2 - MeasureText("Press R to Restart", 20) / 2,
+                    GetScreenHeight() / 2 + 20, 20, RED);
+        }
+
+        // Menu buttons if game not started
+        if (!gamestarted)
+        {
+            playButton.x = GetScreenWidth()/2 - playButton.width/2;
+            quitbutton.x = GetScreenWidth()/2 - quitbutton.width/2;
+            DrawRectangleRec(playButton, GRAY);
+            DrawRectangleRec(quitbutton, GRAY);
+            DrawText("PLAY", playButton.x + 20, playButton.y + 10, 20, BLACK);
+            DrawText("QUIT", quitbutton.x + 20, quitbutton.y + 10, 20, BLACK);
+        }
+
         EndDrawing();
+
     }
 
     UnloadTexture(player_texture);
