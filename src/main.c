@@ -18,7 +18,8 @@
 #define DASH_STEP 60.0f
 #define EYEBALL_MOB_TIMER 1.0f // seconds
 #define CheckPointcount 10
-
+#define LEVITATION 1
+#define LEVITATION_TIMER 5.0f
 
 
 
@@ -42,6 +43,7 @@ typedef struct Player {
     Rectangle rect;     //player hitbox
     float velocityY;    //vertical velocity
     int facingDirection;    //direction in which player is facing //-1 for left (subtracting abscissa), +1 for right
+    int gravitySign;
 
 
     bool isAlive;       //alive status
@@ -79,6 +81,11 @@ typedef struct PowUpDash {
     Rectangle rect;
     bool isCollected;
 } PowUpDash;
+
+typedef struct PowUpLevitation {
+    Rectangle rect;
+    bool isCollected;
+} PowUpLevitation;
 
 
 
@@ -339,6 +346,7 @@ int main() {
         .rect = {spawnPoint.x,spawnPoint.y, PLAYER_DRAW_SIZE/4, PLAYER_DRAW_SIZE/2},
         .velocityY = 0,
         .facingDirection = 1,
+        .gravitySign = 1,
 
         .isAlive = true,
 
@@ -758,6 +766,12 @@ int main() {
         { {6800, 300, 32, 32}, false }      
     };
 
+    PowUpLevitation Levitations[LEVITATION] = {
+       { {400, -40, 32, 32}, false }
+    };
+
+    float gravityTimer = 0.0f;
+
 
 
 
@@ -868,6 +882,7 @@ int main() {
 
 
             bool moving = false;  // Track if player is moving for animation
+            
 
             //=================================Power Up Section===================================//
 
@@ -886,6 +901,26 @@ int main() {
                     (player.dashCount)++;
                 }
             }
+
+            for (int i=0 ; i<LEVITATION; i++){
+                    if (CheckCollisionRecs(player.rect, Levitations[i].rect) && Levitations[i].isCollected == false) {
+                    Levitations[i].isCollected = true;
+                    player.gravitySign = -0.25f;
+                    gravityTimer = LEVITATION_TIMER;
+
+                }
+            }
+
+            if (gravityTimer > 0.0f) {
+                gravityTimer -= GetFrameTime();
+
+                if (gravityTimer <= 0.0f) {
+                player.gravitySign = 1.0f;   // reset to normal gravity
+                gravityTimer = 0.0f;
+                }
+                }
+
+
 
             //============================Collision part===========================================//
 
@@ -1014,9 +1049,10 @@ int main() {
             //======================================Movement Section/Controls=======================================//
 
             if ((onLeftWall || onRightWall) && !onPlatform) {        //wallslide if player touching right/left wall
-            
+                if((onLeftWall && (player.facingDirection == 1)) || (onRightWall && (player.facingDirection == -1))){
                 player.isWallSliding = true;
                 player.isJumping = true;
+                }
             }
             
             if (((player.isWallSliding && IsKeyPressed(KEY_S))|| onPlatform || !(onLeftWall || onRightWall))) {
@@ -1111,11 +1147,11 @@ int main() {
             }
 
             if (!player.isWallSliding) {    //fast gravity downwards if not sliding (accelerated every frame)
-                player.velocityY += GRAVITY;
+                player.velocityY += GRAVITY * player.gravitySign ;
                 player.rect.y += player.velocityY;
             }
             else {
-                player.velocityY = 1.0f;  // slow slide down    (constant velocity, change if necessary)
+                player.velocityY = 1.0f * player.gravitySign;  // slow slide down    (constant velocity, change if necessary)
                 player.rect.y += player.velocityY;
             }
 
@@ -1495,6 +1531,7 @@ int main() {
             }
         }
 
+
         //draw dashes
         for (int i = 0; i < DASHES; i++) {
             if (Dashes[i].isCollected == false) {
@@ -1520,7 +1557,13 @@ int main() {
             );
         }
 
-        
+
+        //draw levitation
+        for (int i = 0; i < LEVITATION; i++) {
+           if (!Levitations[i].isCollected) {
+            DrawRectangleRec(Levitations[i].rect, RED);
+            }
+        }
 
      
         Rectangle frame = animation_frame(&player_anim, max_frames, num_rows, player_texture);
