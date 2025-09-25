@@ -10,7 +10,7 @@
 #define GRAVITY 0.5f
 #define JUMP_FORCE -10.0f
 #define PLAYER_SPEED 5.0f
-#define MAX_PLATFORMS 45
+#define MAX_PLATFORMS 50
 #define DOUBLE_JUMPS 5
 #define DASHES 2
 #define TOTAL_TIME 120.0f // seconds (2min game timer)
@@ -301,6 +301,7 @@ int main() {
     const int TILE_SIZE = 32;  //each tile is 32x32 px
 
     Texture2D tileset = LoadTexture("assets/map/tileset.png");
+    Texture2D laser_texture = LoadTexture("assets/hero/laser.png");
     Texture2D brain_texture = LoadTexture("assets/boss/brain.png");
     Texture2D boss_arena_tileset = LoadTexture("assets/map/boss_arena_tileset.png");
     Texture2D boss_arena_background = LoadTexture("assets/map/boss_arena.png");
@@ -386,7 +387,7 @@ int main() {
     //LASER INITIALIZE
     bool laserActive = false;
     Rectangle laserRect = {0};   // laser hitbox
-    float laserLength = 600;     // how long the laser reaches
+    float laserLength = 800;     // how long the laser reaches
     float laserDuration = 0.2f;  // how long laser stays on screen in seconds
     float laserTimer = 0.0f;
 
@@ -515,7 +516,15 @@ int main() {
         //left wall
         {20000-1024, -20000-1024, 1024,1024},            // left wall
         //right wall
-        {20000+1024, -20000-1024, 1024,1024}             // right wall
+        {20000+1024, -20000-1024, 1024,1024},          // right wall
+
+        {20000+928, -20000-200, 96, 96}, //right small platform 1
+
+        {20000+928-300, -20000-200-150, 128, 96}, //right small platform 2
+
+        {20000, -20000-200, 96, 96}, //left small platform 1
+
+        {20000+250, -20000-200-150, 128, 96} //left small platform 2
 
 
 
@@ -920,6 +929,19 @@ int main() {
         {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
         {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
     };
+
+
+        int platform43[3][3] = {
+        {LEFT_TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+        int platform44[3][4] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+
 
 
 
@@ -1669,8 +1691,12 @@ int main() {
                 laserRect.x = player.rect.x - laserLength;
                 laserRect.width = laserLength;
             }
-            laserRect.y = player.rect.y;
+            laserRect.y = player.rect.y+15;
+            if(player_anim.row == 4){ //if jumping, adjust laser height
+                laserRect.y = player.rect.y+10;
+            }
             laserRect.height = player.rect.height;
+            laserRect.height = player.rect.height/20;
 
             if (laserTimer >= laserDuration)
                 laserActive = false; // turn off after duration
@@ -1807,7 +1833,7 @@ int main() {
         
 
         DrawTilemap(tileset, 5, 5, platform1, 100, 345, TILE_SIZE);
-        DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE);
+        DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE); //{200, 280, 128, 192},
         DrawTilemap(tileset, 6, 6, platform3, 400, 100, TILE_SIZE);
         DrawTilemap(tileset, 4, 8, platform4, 700, 150, TILE_SIZE);
         DrawTilemap(tileset, 4, 8, platform5, 900, 250, TILE_SIZE);
@@ -1849,18 +1875,26 @@ int main() {
 
 
 
-        //BOSS ARENA WALLS
-        // DrawTilemap(tileset, 20, 5, bosswall1, 20000, -20000, TILE_SIZE);
-        // DrawTilemap(tileset, 5, 20, bosswall2, 20000, -20000, TILE_SIZE);
-        // DrawTilemap(tileset, 20, 5, bosswall3, 20000, -10000, TILE_SIZE);
-        // DrawTilemap(tileset, 5, 20, bosswall4, 30000, -20000, TILE_SIZE);
-
+     
         // BOSS ARENA WALLS
-        // Top wall (box1)
+       
         DrawTilemap(boss_arena_tileset, 32, 32, platform40, 20000, -20000, TILE_SIZE);
-        DrawTilemap(boss_arena_tileset, 32, 32, platform41, 20000-1024, -20000-1024, TILE_SIZE);
+        DrawTilemap(boss_arena_tileset, 32, 32, platform41, 20000-1024, -20000-1024+200, TILE_SIZE);
         
-        DrawTilemap(boss_arena_tileset, 32, 32, platform42, 20000+1024, -20000-1024, TILE_SIZE);
+        DrawTilemap(boss_arena_tileset, 32, 32, platform42, 20000+1024, -20000-1024+200, TILE_SIZE);
+        
+        DrawTilemap(boss_arena_tileset, 3, 3, platform43, 20000+928, -20000-200, TILE_SIZE);
+        DrawTilemap(boss_arena_tileset, 3, 4, platform44, 20000+928-300, -20000-200-150, TILE_SIZE);
+        //{20000+928-300, -20000-200-150, 96, 128}
+
+        DrawTilemap(boss_arena_tileset, 3, 3, platform43, 20000, -20000-200, TILE_SIZE);
+        DrawTilemap(boss_arena_tileset, 3, 4, platform44, 20000+250, -20000-200-150, TILE_SIZE);
+
+
+        
+
+        
+        
 
       
 
@@ -1993,6 +2027,14 @@ int main() {
         if (laserActive)
         {
             DrawRectangleRec(laserRect, WHITE);
+            // DrawTexturePro(
+            //     laser_texture,
+            //     (Rectangle){0, 0, laser_texture.width, laser_texture.height},
+            //     laserRect,
+            //     (Vector2){0, 0},
+            //     0.0f,
+            //     WHITE
+            // );
         }
 
         if (laserActive && brain.isAlive)
