@@ -990,7 +990,7 @@ int main() {
 
 
     bool showDialogue = false;
-    const char* dialogueText1 = "Hello, adventurer! \nyou must use this ability to slay the beast. \nI stole this spell from the temple of SHOGGOTH. \nPress the 'E' key to use the ability. \nGood luck! You need it! Ohohoho!";
+    const char* dialogueText1 = "Hello, wanderer!  if you wish to slay the beast, \nyou must use this ability i am giving you\nI stole this spell from the temple of SHOGGOTH. \n\nPress the 'E' key to use the ability. \nGood luck! You need it! Ohohoho!";
     const char* dialogueText2 = "Go now, and may fortune favor you!";
     Rectangle dialogueRange = { 5800, 180, 128, 192 };  // Same as destRec from earlier
 
@@ -1729,7 +1729,7 @@ int main() {
 
 
        // Activate laser when pressing E
-        if (IsKeyPressed(KEY_E) && !laserActive)
+        if (IsKeyPressed(KEY_E) && !laserActive && player.laserAcquired)
         {
             laserActive = true;
             laserTimer = 0.0f;
@@ -2027,7 +2027,7 @@ int main() {
                     (Rectangle){5800+100, 150-80, 64, 64},
                     (Vector2){0, 0}, 0.0f, WHITE
                 );
-                // Convert mouse to virtual coordinates first
+                // Full Screen EYEBALL fix
                 Vector2 mouseScreen = GetMousePosition();
                 float scale = (float)GetScreenHeight() / virtualHeight;
                 int scaledWidth = (int)(virtualWidth * scale);
@@ -2040,6 +2040,8 @@ int main() {
 
                 // Convert to world coordinates with camera
                 Vector2 mouseWorld = GetScreenToWorld2D(mouseVirtual, camera);
+
+
 
                 // Check collision
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
