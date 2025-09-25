@@ -298,6 +298,7 @@ int main() {
     InitAudioDevice();                    
     Sound awake_fx = LoadSound("assets/sound/awake_fx.mp3");  
     bool soundPlayed = false; 
+    bool redlightlogic = true;
 
 
     
@@ -1173,26 +1174,26 @@ int main() {
                 // Light state logic (comment this if GREEN LIGHT AT ALL TIMES NEEDED)
 
                 //==========================================================================================
-            // if(worldMode == 0) //if in overworld use RED LIGHT/GREEN LIGHT CYCLE
-            // {  
-            //     if (light == GREEN_LIGHT) {
-            //         if (elapsed >= 9.0 && !soundPlayed) {   // Play sound 1 second before red light
-            //             PlaySound(awake_fx);
-            //             soundPlayed = true;
-            //         }
-            //         if (elapsed >= 10.0) {
-            //             boss_awake_animation(&boss_anim);
-            //             light = RED_LIGHT;
-            //             state_start_time = GetTime();
-            //             soundPlayed = false;   // reset for next cycle
-            //         }
-            //     } else if (light == RED_LIGHT && elapsed >= 5.0) {
-            //         boss_sleep_animation(&boss_anim);
-            //         light = GREEN_LIGHT;
-            //         state_start_time = GetTime();
-            //         soundPlayed = false;   // reset for next cycle
-            //     }
-            // }
+            if(worldMode == 0 && redlightlogic) //if in overworld use RED LIGHT/GREEN LIGHT CYCLE
+            {  
+                if (light == GREEN_LIGHT) {
+                    if (elapsed >= 9.0 && !soundPlayed) {   // Play sound 1 second before red light
+                        PlaySound(awake_fx);
+                        soundPlayed = true;
+                    }
+                    if (elapsed >= 10.0) {
+                        boss_awake_animation(&boss_anim);
+                        light = RED_LIGHT;
+                        state_start_time = GetTime();
+                        soundPlayed = false;   // reset for next cycle
+                    }
+                } else if (light == RED_LIGHT && elapsed >= 5.0) {
+                    boss_sleep_animation(&boss_anim);
+                    light = GREEN_LIGHT;
+                    state_start_time = GetTime();
+                    soundPlayed = false;   // reset for next cycle
+                }
+            }
 
 
 
@@ -1384,6 +1385,8 @@ int main() {
             //============================== Dialogue Section ================================//
             if (player.rect.x > 5800 && player.rect.x < 6000) 
                 {
+                    
+                    
                 // Player is in NPC range
                 if (IsKeyPressed(KEY_UP)) {
                     showDialogue = true;
@@ -1813,7 +1816,10 @@ int main() {
             }
         }
 
-
+        if(IsKeyPressed(KEY_L))
+        {
+            redlightlogic = !redlightlogic;
+        }
         if (IsKeyPressed(KEY_R)) {
             // Reset world mode
              //overworld
