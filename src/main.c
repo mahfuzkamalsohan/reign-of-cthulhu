@@ -973,6 +973,12 @@ int main() {
 
     float gravityTimer = 0.0f;
 
+    Rectangle playButton = { 475, 250, 100, 50 };
+    bool gamestarted = false;
+
+    Rectangle quitbutton = {475, 450, 100, 50};
+
+
 
 
 
@@ -1032,7 +1038,19 @@ int main() {
 
         float dt = GetFrameTime();
         double elapsed = GetTime() - state_start_time;
-        if (player.isAlive) {
+
+        Vector2 mousePoint = GetMousePosition();
+
+        if (CheckCollisionPointRec(mousePoint, playButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            gamestarted = !gamestarted; 
+        }
+        if (CheckCollisionPointRec(mousePoint, quitbutton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            return 0;
+        }
+        
+        if (player.isAlive && gamestarted) {
 
 
             if(worldMode == 1) // if in boss arena
@@ -1709,9 +1727,11 @@ int main() {
             // Reset world mode
             worldMode = 0; //overworld
             
+            
             // Reset player
             player.rect.x = spawnPoint.x;
             player.rect.y = spawnPoint.y;
+            player.gravitySign = 1;
             player.velocityY = 0;
             player.facingDirection = 1;
             player.isAlive = true;
@@ -1743,6 +1763,9 @@ int main() {
             }
             for (int i = 0; i < DASHES; i++) {
                 Dashes[i].isCollected = false;
+            }
+            for( int i=0 ; i<LEVITATION; i++){
+                Levitations[i].isCollected = false;
             }
         }
         for (int i = 0; i < CheckPointcount; i++) {
@@ -1782,6 +1805,7 @@ int main() {
       
        
         // Draw Worlds
+        if(gamestarted){
         if(worldMode == 0) //overworld
         {
             DrawTexturePro(
@@ -2164,10 +2188,20 @@ int main() {
             DrawText("GAME OVER", screenWidth / 2 - MeasureText("GAME OVER", 40) / 2, screenHeight / 2 - 20, 40, RED);
             DrawText("Press R to Restart", screenWidth / 2 - MeasureText("Press R to Restart", 20) / 2, screenHeight / 2 + 20, 20, RED);
         }
+        }
+        else{
+             ClearBackground(RAYWHITE);
+            DrawRectangleRec(playButton, GRAY);
+            DrawRectangleRec(quitbutton, GRAY);
 
+            DrawText("PLAY", playButton.x + 20, playButton.y + 10, 20, BLACK);
+            DrawText("QUIT", quitbutton.x+20, quitbutton.y+10, 20, BLACK  );
+
+        }
         
         EndDrawing();
     }
+    
 
     UnloadTexture(player_texture);
     UnloadSound(awake_fx);
