@@ -994,11 +994,11 @@ int main() {
 
     float gravityTimer = 0.0f;
 
-    Rectangle playButton = { 475, 250, 100, 50 };
-    Rectangle playButton2 = {475, 350,100,50};
+    Rectangle playButton = { 475, 350, 100, 50 };
+    Rectangle playButton2 = {475, 450,100,50};
     bool gamestarted = false;
 
-    Rectangle quitbutton = {475, 450, 100, 50};
+    Rectangle quitbutton = {475, 550, 100, 50};
 
 
 
@@ -2061,6 +2061,15 @@ dots[i].timer = 0;
                     (Vector2){0, 0}, 0.0f, WHITE
                 );
 
+
+                //BOSS ARENA TELEPORTER
+                DrawTexturePro(
+                    teleporter_texture,
+                    (Rectangle){0, 0, teleporter_texture.width, teleporter_texture.height},
+                    (Rectangle){4700, 60-60, 64, 64}, //change this once sadnan gives coords
+                    (Vector2){0, 0}, 0.0f, WHITE
+                );
+
                 //Draw NPC
                 DrawTexturePro(
                     wizard_texture,
@@ -2279,7 +2288,7 @@ dots[i].timer = 0;
         // Menu buttons if game not started
         if (!gamestarted)
         {
-             playButton.x = GetScreenWidth()/2 - playButton.width/2;
+            playButton.x = GetScreenWidth()/2 - playButton.width/2;
             quitbutton.x = GetScreenWidth()/2 - quitbutton.width/2;
             playButton2.x = GetScreenWidth()/2 - playButton2.width/2;
             DrawRectangleRec(playButton, GRAY);
@@ -2287,7 +2296,7 @@ dots[i].timer = 0;
             DrawRectangleRec(quitbutton, GRAY);
             DrawText("REIGN OF CTHULHU",
                      GetScreenWidth()/2 - MeasureText("REIGN OF CTHULHU", 40)/2,
-                     GetScreenHeight()/2 - 200, 40, DARKBLUE);
+                     200, 40, RED);
             DrawText("LEVEL 1", playButton.x + 10, playButton.y + 10, 20, BLACK);
             DrawText("LEVEL 2", playButton2.x + 10, playButton2.y + 10, 20, BLACK);
             DrawText("QUIT", quitbutton.x + 20, quitbutton.y + 10, 20, BLACK);
