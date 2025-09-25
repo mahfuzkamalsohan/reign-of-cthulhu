@@ -53,7 +53,7 @@ typedef struct Player {
     bool isJumping;     //if player is on air 
     bool isDashing;     //if player is dashing
     bool isWallSliding;      
-
+    bool laserAcquired;
     int doubleJumpCount;    //consumable double jumps
 
     int dashCount;      //consumable dashes
@@ -306,6 +306,7 @@ int main() {
     const int TILE_SIZE = 32;  //each tile is 32x32 px
 
     Texture2D tileset = LoadTexture("assets/map/tileset.png");
+    Texture2D wizard_texture = LoadTexture("assets/npc/wizard.png");
     Texture2D laser_texture = LoadTexture("assets/hero/laser.png");
     Texture2D brain_texture = LoadTexture("assets/boss/brain.png");
     Texture2D boss_arena_tileset = LoadTexture("assets/map/boss_arena_tileset.png");
@@ -381,7 +382,7 @@ int main() {
         .isJumping = false,
 
         .doubleJumpCount = 0,
-
+        .laserAcquired = false,
         .dashCount = 0,
         .isDashing = false,
         .isAttacking = false,
@@ -404,6 +405,8 @@ int main() {
         .isActive = false,
         .timer = EYEBALL_MOB_TIMER
     };
+
+
 
     //BRAIN INITIALIZE
     Brain brain = {
@@ -973,7 +976,7 @@ int main() {
     };
 
     PowUpLevitation Levitations[LEVITATION] = {
-       { {400, -40, 32, 32}, false }
+       { {400, -70, 32, 32}, false }
     };
 
     float gravityTimer = 0.0f;
@@ -985,6 +988,10 @@ int main() {
 
 
 
+    bool showDialogue = false;
+    const char* dialogueText1 = "Hello, adventurer! If you wish to slay the beast that conquers this land, you must use this ability i am giving you. Press the 'E' key to use the ability. Good luck! You need it! Ohohoho!";
+    const char* dialogueText2 = "Go now, and may fortune favor you!";
+    Rectangle dialogueRange = { 5800, 180, 128, 192 };  // Same as destRec from earlier
 
 
 
@@ -1358,7 +1365,19 @@ int main() {
 
 
 
-
+            //============================== Dialogue Section ================================//
+            if (player.rect.x > 5800 && player.rect.x < 6000) 
+                {
+                // Player is in NPC range
+                if (IsKeyPressed(KEY_UP)) {
+                    showDialogue = true;
+                    player.laserAcquired = true;
+                }
+            } 
+            else 
+            {
+                showDialogue = false; // Player left the range
+            }
 
             
 
@@ -1627,6 +1646,7 @@ int main() {
         }
 
 
+
         //================================== Eye Ball====================//
 
         // Spawn every 5 seconds
@@ -1880,7 +1900,7 @@ int main() {
                 DrawTilemap(tileset, 4, 6, platform20, 4400, 90, TILE_SIZE);
                 DrawTilemap(tileset, 8, 18, platform21, 4700, 60, TILE_SIZE);
                 DrawTilemap(tileset, 7, 10, platform22, 5400, 310, TILE_SIZE);
-                DrawTilemap(tileset, 5, 8, platform23, 5800, 130, TILE_SIZE);
+                DrawTilemap(tileset, 5, 8, platform23, 5800, 130, TILE_SIZE); //wizard platform
                 DrawTilemap(tileset, 2, 5, platform24, 4800, 500, TILE_SIZE);
                 DrawTilemap(tileset, 4, 6, platform25, 6100, 400, TILE_SIZE);
                 DrawTilemap(tileset, 3, 4, platform26, 6400, 300, TILE_SIZE);
@@ -1919,7 +1939,25 @@ int main() {
 
                 
 
-        
+                //Draw NPC
+                DrawTexturePro(
+                    wizard_texture,
+                    (Rectangle){0, 0, wizard_texture.width, wizard_texture.height},
+                    (Rectangle){5800+100, 150-80, 64, 64},
+                    (Vector2){0, 0}, 0.0f, WHITE
+                );
+
+
+                //Draw Eyeball Projectile
+                if(dotActive)
+                {
+                    DrawTexturePro(
+                        eyeball,
+                        (Rectangle){0, 0, eyeball.width, eyeball.height},
+                        (Rectangle){dotPos.x - 10, dotPos.y - 10, 20, 20},
+                        (Vector2){0, 0}, 0.0f, WHITE
+                    );
+                }    
         
 
       
@@ -2054,6 +2092,21 @@ int main() {
             DrawRectangle(barX, barY, currentWidth, barHeight, RED);
             DrawRectangleLines(barX, barY, barWidth, barHeight, BLACK);
         }
+        if (showDialogue)
+        {
+                Rectangle dialogueBox = { GetScreenWidth()/2 - 300, GetScreenHeight()/2 + 100, 600, 100 }; // bottom of screen
+                DrawRectangleRec(dialogueBox, BLACK);
+                DrawRectangleLines(dialogueBox.x, dialogueBox.y, dialogueBox.width, dialogueBox.height, WHITE);
+                if(player.laserAcquired)
+                {
+                    DrawText(dialogueText1, dialogueBox.x + 10, dialogueBox.y + 10, 20, WHITE);
+                }
+                else
+                {
+                    DrawText(dialogueText2, dialogueBox.x + 10, dialogueBox.y + 10, 20, WHITE);
+                }
+                
+        }
 
         // Game over
         if (!player.isAlive)
@@ -2064,6 +2117,7 @@ int main() {
             DrawText("Press R to Restart",
                     GetScreenWidth() / 2 - MeasureText("Press R to Restart", 20) / 2,
                     GetScreenHeight() / 2 + 20, 20, RED);
+            
         }
 
         // Menu buttons if game not started
