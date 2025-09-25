@@ -10,8 +10,8 @@
 #define GRAVITY 0.5f
 #define JUMP_FORCE -10.0f
 #define PLAYER_SPEED 5.0f
-#define MAX_PLATFORMS 30
-#define DOUBLE_JUMPS 3
+#define MAX_PLATFORMS 40
+#define DOUBLE_JUMPS 5
 #define DASHES 2
 #define TOTAL_TIME 120.0f // seconds (2min game timer)
 #define DASH_DISTANCE 300.0f
@@ -255,6 +255,8 @@ void mob_idle_animation(Animation* anim) {
 }
 
 
+
+
 int main() {
     int screenWidth = 1080;
     int screenHeight = 720;
@@ -410,7 +412,10 @@ int main() {
     {
         {1450,100,32,32},
         {2550,50,32,32},
-        {4150,50,32,32}
+        {4150,50,32,32},
+        {5830,130,32,32},
+        {8130, 200,32,32},
+        {9730, 100,32,32}
     };
 
     
@@ -438,9 +443,23 @@ int main() {
         {4400, 90, 192, 128},    
         {4700, 60, 576, 256},    
         {5400, 310, 320, 224},   
-        {5800, 130, 256, 160},
-        {4800, 500, 160, 64}
-
+        {5800, 130, 256, 160},//New From here->
+        {4800, 500, 160, 64},
+        {6100, 400, 192, 128},
+        {6400, 300, 160, 128},
+        {6700, 400, 160, 96},
+        {7000, 150, 256, 128},
+        {7170, 190, 160, 96},
+        {7500, 350, 256, 128},
+        {7670, 280, 256,128},
+        {8100, 200, 192, 128},
+        {8400, 100, 160, 128},
+        {8700, 250, 256, 128},
+        {8900, 300, 160, 96},
+        {9300, 200, 192, 128},
+        {9700, 100, 224, 128},
+        {10100, 250, 256, 128},
+        {10300, 160, 192, 128}
     };
 
     
@@ -630,9 +649,93 @@ int main() {
         {LEFT_TOP_TILE, TOP_TILE ,TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
         {LEFT_BOTTOM_TILE, BOTTOM_TILE ,BOTTOM_TILE,BOTTOM_TILE,RIGHT_BOTTOM_TILE}
     };
-
-
-
+    int platform25[4][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform26[3][4] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform27[3][5] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform28[4][8] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform29[3][5] = {
+        
+        {CENTER_TILE, CENTER_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform30[4][8] = {
+    {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+    {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform31[4][8] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {CENTER_TILE, CENTER_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform32[4][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform33[4][5] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform34[4][8] = {
+    {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+    {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform35[3][5] = {
+        {CENTER_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform36[4][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform37[4][7] = {
+    {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+    {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+    {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform38[4][8] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, CENTER_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
+    int platform39[4][6] = {
+        {LEFT_TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, TOP_TILE, RIGHT_TOP_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {LEFT_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, CENTER_TILE, RIGHT_TILE},
+        {   CENTER_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, BOTTOM_TILE, RIGHT_BOTTOM_TILE}
+    };
     //temporary damage block
     Rectangle damageBlock = { 300, -2000, 50, 50 };
 
@@ -645,11 +748,14 @@ int main() {
     PowUpDjump Djumps[DOUBLE_JUMPS] = {
     //    { {100, 0, 20, 20}, false },
        { {100,120,32,32}, false },
-       { {4850, 450, 32, 32}, false }
+       { {4850, 450, 32, 32}, false },
+
+       { {6810, 250, 32, 32}, false }
     };
 
     PowUpDash Dashes[DASHES] = {
-        { {300,-40,32,32}, false }        
+        { {300,-40,32,32}, false } , 
+        { {6800, 300, 32, 32}, false }      
     };
 
 
@@ -1300,9 +1406,6 @@ int main() {
        
 
 
-        char coordText[64];
-        sprintf(coordText, "X: %.2f  Y: %.2f", player.rect.x, player.rect.y);
-        DrawText(coordText, 10, 10, 20, BLACK);
 
 
         Texture2D current_boss_tex = (light == GREEN_LIGHT) ? boss_sleep_texture : boss_awake_texture;
@@ -1321,32 +1424,6 @@ int main() {
 
         BeginMode2D(camera);
         
-
-     
-
-    //     Rectangle platforms[MAX_PLATFORMS] = {
-    //     {100, 345, 100, 80},
-    //     {200, 280, 120, 180},
-    //     {500, 280, 1000, 80},
-    //     {800, 200, 140, 800},
-    //     {-50,-50,50,120},
-    //     {200,0,200,180}
-    // };
-
-        // Draw platforms
-        // for (int i = 0; i < MAX_PLATFORMS; i++) {
-        //     DrawRectangleRec(platforms[i], GREEN);
-        // }
-
-        
-
-
-
-
-        // Draw tilemap
-		// DrawTilemap(tileset, 5, 5, platform1, 100, 345, TILE_SIZE);
-		// DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE);
-        // DrawTilemap(tileset, 6, 6, platform3, 400, 100, TILE_SIZE);
 
         DrawTilemap(tileset, 5, 5, platform1, 100, 345, TILE_SIZE);
         DrawTilemap(tileset, 6, 4, platform2, 200, 280, TILE_SIZE);
@@ -1372,6 +1449,21 @@ int main() {
         DrawTilemap(tileset, 7, 10, platform22, 5400, 310, TILE_SIZE);
         DrawTilemap(tileset, 5, 8, platform23, 5800, 130, TILE_SIZE);
         DrawTilemap(tileset, 2, 5, platform24, 4800, 500, TILE_SIZE);
+        DrawTilemap(tileset, 4, 6, platform25, 6100, 400, TILE_SIZE);
+        DrawTilemap(tileset, 3, 4, platform26, 6400, 300, TILE_SIZE);
+        DrawTilemap(tileset, 3, 5, platform27, 6700, 400, TILE_SIZE);
+        DrawTilemap(tileset, 4, 8, platform28, 7000, 150, TILE_SIZE);
+        DrawTilemap(tileset, 3, 5, platform29, 7170, 190, TILE_SIZE);
+        DrawTilemap(tileset, 4, 8, platform30, 7500, 350, TILE_SIZE);
+        DrawTilemap(tileset, 4, 8, platform31, 7670, 280, TILE_SIZE);
+        DrawTilemap(tileset, 4, 6, platform32, 8100, 200, TILE_SIZE);
+        DrawTilemap(tileset, 4, 5, platform33, 8400, 100, TILE_SIZE);
+        DrawTilemap(tileset, 4, 8, platform34, 8700, 250, TILE_SIZE);
+        DrawTilemap(tileset, 3, 5, platform35, 8900, 300, TILE_SIZE);
+        DrawTilemap(tileset, 4, 6, platform36, 9300, 200, TILE_SIZE);
+        DrawTilemap(tileset, 4, 7, platform37, 9700, 100, TILE_SIZE);
+        DrawTilemap(tileset, 4, 8, platform38, 10100, 250, TILE_SIZE);
+        DrawTilemap(tileset, 4, 6, platform39, 10300, 160, TILE_SIZE);
     
 
 
@@ -1447,8 +1539,8 @@ int main() {
             0.0f,
             WHITE
         );
-
-
+        
+        
         Rectangle mob_frame = animation_frame(&mob_anim, mob_max_frames, mob_num_rows, mob_texture);
        
 
@@ -1487,6 +1579,9 @@ int main() {
         //Draw player health
         DrawText(TextFormat("Health: %d", player.health), 500, 10, 20, WHITE);
 
+        char coordText[64];
+        sprintf(coordText, "X: %.2f  Y: %.2f", player.rect.x, player.rect.y);
+        DrawText(coordText, 20, 40, 10, BLACK);
 
         //Draw INSTRUCTIONS
         // DrawText("LEFT CLICK: LIGHT ATTACK", 750, 10, 20, BLACK);
