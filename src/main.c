@@ -1802,6 +1802,21 @@ Vector2 mouseWorld = GetScreenToWorld2D(mouseVirtual, camera);
         CheckCollisionPointCircle(mouseWorld, dots[i].pos, 20)) {
         dots[i].active = false;  // destroy dot
         }   
+
+        Vector2 playerCenter1 = {
+    player.rect.x + player.rect.width / 2,
+    player.rect.y + player.rect.height / 2
+};
+
+float dx = dots[i].pos.x - playerCenter1.x;
+float dy = dots[i].pos.y - playerCenter1.y;
+float distance = sqrtf(dx*dx + dy*dy);
+
+// If too far, deactivate dot so it can respawn
+if (distance > 1200.0f) {
+    dots[i].active = false;
+    dots[i].timer = 0;  // optional: reset timer for respawn logic
+}
     }
 }
         
