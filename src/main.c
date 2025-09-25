@@ -8,7 +8,7 @@
 
 #define MAX_DOTS 3
 #define DOT_RADIUS 20
-
+#define NOCLIP 1
 #define GRAVITY 0.5f
 #define JUMP_FORCE -10.0f
 #define PLAYER_SPEED 5.0f
@@ -22,6 +22,7 @@
 #define CheckPointcount 10
 #define LEVITATION 1
 #define LEVITATION_TIMER 5.0f
+#define NOCLIP_TIMER 4.0f
 
 
 
@@ -47,6 +48,8 @@ typedef struct Player {
     int facingDirection;    //direction in which player is facing //-1 for left (subtracting abscissa), +1 for right
     int gravitySign;
 
+    bool phaseActive;     
+     
 
     bool isAlive;       //alive status
 
@@ -89,6 +92,11 @@ typedef struct PowUpDash {
     Rectangle rect;
     bool isCollected;
 } PowUpDash;
+
+typedef struct PowUpNoclip {
+    Rectangle rect;
+    bool isCollected;
+} PowUpNoclip;
 
 typedef struct PowUpLevitation {
     Rectangle rect;
@@ -382,7 +390,8 @@ int main() {
         .velocityY = 0,
         .facingDirection = 1,
         .gravitySign = 1,
-
+        .phaseActive = false,
+        
         .isAlive = true,
 
         .health = 3,
@@ -987,11 +996,18 @@ int main() {
         { {6800, 300, 32, 32}, false }      
     };
 
+    PowUpNoclip Noclips[NOCLIP] = {
+        {{200,-40, 32,32 }, false}
+    };
+
     PowUpLevitation Levitations[LEVITATION] = {
        { {400, -70, 32, 32}, false }
     };
 
+    
+
     float gravityTimer = 0.0f;
+    float phaseTimer = 0.0f;
 
     Rectangle playButton = { 475, 250, 100, 50 };
     Rectangle playButton2 = {475, 350,100,50};
@@ -1275,6 +1291,22 @@ int main() {
                 }
                 }
 
+            for (int i = 0; i < NOCLIP; i++) {
+        if (CheckCollisionRecs(player.rect, Noclips[i].rect) && !Noclips[i].isCollected) {
+            Noclips[i].isCollected = true;
+            player.phaseActive = true;       
+            phaseTimer = NOCLIP_TIMER;       
+        }
+        }
+        if (phaseTimer > 0.0f) {
+        phaseTimer -= GetFrameTime();
+
+        if (phaseTimer <= 0.0f) {
+        player.phaseActive = false;   // turn off noclip
+        phaseTimer = 0.0f;
+        }
+        }       
+
 
 
             //============================Collision part===========================================//
@@ -1367,12 +1399,14 @@ int main() {
                     float minOverlapY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;  //checks which overlap less between top and bottom
 
                     if (minOverlapX < minOverlapY) {            //if horizontal overlap less
+                        if(!player.phaseActive){
                         if (overlapLeft < overlapRight) {       //if left overlap less, move to left of platform 
                             player.rect.x -= overlapLeft;
                         }
                         else {
                             player.rect.x += overlapRight;
                         }
+                    }
                     }
                     else{
                         if (overlapTop < overlapBottom) {
@@ -1714,6 +1748,20 @@ dots[i].timer = 0;
     }
 }
 
+Vector2 mouseScreen = GetMousePosition();
+float Scale = (float)GetScreenHeight() / virtualHeight;
+int ScaledWidth = (int)(virtualWidth * Scale);
+int OffsetX = (GetScreenWidth() - ScaledWidth) / 2;
+
+Vector2 mouseVirtual = {
+    (mouseScreen.x - OffsetX) / Scale,
+    mouseScreen.y / Scale
+};
+
+// Convert to world coordinates with camera
+Vector2 mouseWorld = GetScreenToWorld2D(mouseVirtual, camera);
+
+
         for (int i = 0; i < MAX_DOTS; i++) {
     if (dots[i].active) {
         
@@ -1740,12 +1788,10 @@ dots[i].timer = 0;
         }
 
         
-        Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
-
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
-            CheckCollisionPointCircle(mouseWorld, dots[i].pos, 20)) {
-            dots[i].active = false;  // destroy dot
-        }
+        CheckCollisionPointCircle(mouseWorld, dots[i].pos, 20)) {
+        dots[i].active = false;  // destroy dot
+        }   
     }
 }
         
@@ -1815,6 +1861,7 @@ dots[i].timer = 0;
             player.facingDirection = 1;
             player.isAlive = true;
             player.health = 100;
+            player.phaseActive = false;
 
             player.isJumping = false;
 
@@ -1844,6 +1891,9 @@ dots[i].timer = 0;
             }
             for( int i=0 ; i<LEVITATION; i++){
                 Levitations[i].isCollected = false;
+            }
+            for( int i=0 ; i<NOCLIP; i++){
+                Noclips[i].isCollected = false;
             }
         }
 
@@ -1901,6 +1951,9 @@ dots[i].timer = 0;
             }
             for( int i=0 ; i<LEVITATION; i++){
                 Levitations[i].isCollected = false;
+            }
+            for( int i=0 ; i<NOCLIP; i++){
+                Noclips[i].isCollected = false;
             }
         }
         for (int i = 0; i < CheckPointcount; i++) {
@@ -2062,18 +2115,18 @@ dots[i].timer = 0;
                     (Vector2){0, 0}, 0.0f, WHITE
                 );
                 // Full Screen EYEBALL fix
-                Vector2 mouseScreen = GetMousePosition();
-                float scale = (float)GetScreenHeight() / virtualHeight;
-                int scaledWidth = (int)(virtualWidth * scale);
-                int offsetX = (GetScreenWidth() - scaledWidth) / 2;
+                // Vector2 mouseScreen = GetMousePosition();
+                // float scale = (float)GetScreenHeight() / virtualHeight;
+                // int scaledWidth = (int)(virtualWidth * scale);
+                // int offsetX = (GetScreenWidth() - scaledWidth) / 2;
 
-                Vector2 mouseVirtual = {
-                    (mouseScreen.x - offsetX) / scale,
-                    mouseScreen.y / scale
-                };
+                // Vector2 mouseVirtual = {
+                //     (mouseScreen.x - offsetX) / scale,
+                //     mouseScreen.y / scale
+                // };
 
-                // Convert to world coordinates with camera
-                Vector2 mouseWorld = GetScreenToWorld2D(mouseVirtual, camera);
+                // // Convert to world coordinates with camera
+                // Vector2 mouseWorld = GetScreenToWorld2D(mouseVirtual, camera);
 
 
 
@@ -2151,6 +2204,12 @@ dots[i].timer = 0;
                                     (Rectangle){0, 0, levitation_texture.width, levitation_texture.height},
                                     Levitations[i].rect,
                                     (Vector2){0, 0}, 0.0f, WHITE);
+                    }
+                }
+
+                for(int i = 0; i< NOCLIP; i++){
+                    if(!Noclips[i].isCollected){
+                         DrawRectangleRec(Noclips[i].rect, RED);
                     }
                 }
 
@@ -2292,4 +2351,4 @@ dots[i].timer = 0;
     CloseAudioDevice();
     CloseWindow();
     return 0;
-}
+    }
