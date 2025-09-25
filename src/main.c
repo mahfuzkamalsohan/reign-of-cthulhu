@@ -1802,10 +1802,12 @@ int main() {
 
         BeginDrawing();
         //ClearBackground(light == GREEN_LIGHT ? SKYBLUE : RED);
-      
+      ClearBackground(RAYWHITE);
        
         // Draw Worlds
         if(gamestarted){
+        
+        if(player.isAlive){
         if(worldMode == 0) //overworld
         {
             DrawTexturePro(
@@ -1819,12 +1821,6 @@ int main() {
         }
         
        
-
-       
-
-
-
-
         Texture2D current_boss_tex = (light == GREEN_LIGHT) ? boss_sleep_texture : boss_awake_texture;
         Rectangle boss_frame = animation_frame(&boss_anim, boss_max_frames, boss_num_rows, current_boss_tex);
 
@@ -2182,15 +2178,16 @@ int main() {
             DrawText(light == GREEN_LIGHT ? "GREEN LIGHT: MOVE!" : "RED LIGHT: DON'T MOVE!", 20, 20, 20, WHITE);
         }
         
-
+    }
         // Game over message
-        if (!player.isAlive) {
+    
+        else if (!player.isAlive) {
             DrawText("GAME OVER", screenWidth / 2 - MeasureText("GAME OVER", 40) / 2, screenHeight / 2 - 20, 40, RED);
             DrawText("Press R to Restart", screenWidth / 2 - MeasureText("Press R to Restart", 20) / 2, screenHeight / 2 + 20, 20, RED);
         }
         }
         else{
-             ClearBackground(RAYWHITE);
+             
             DrawRectangleRec(playButton, GRAY);
             DrawRectangleRec(quitbutton, GRAY);
 
