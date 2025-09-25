@@ -982,6 +982,7 @@ int main() {
     float gravityTimer = 0.0f;
 
     Rectangle playButton = { 475, 250, 100, 50 };
+    Rectangle playButton2 = {475, 350,100,50};
     bool gamestarted = false;
 
     Rectangle quitbutton = {475, 450, 100, 50};
@@ -1053,14 +1054,26 @@ int main() {
 
         Vector2 mousePoint = GetMousePosition();
 
+        if(!gamestarted){
+
         if (CheckCollisionPointRec(mousePoint, playButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             gamestarted = !gamestarted; 
+        }
+        if (CheckCollisionPointRec(mousePoint, playButton2) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            gamestarted = !gamestarted;
+            player.rect.x = bossArenaSpawn.x;
+                player.rect.y = bossArenaSpawn.y;
+                cameraMode = 1; //static camera
+                worldMode = 1; //boss arena background
+                
         }
         if (CheckCollisionPointRec(mousePoint, quitbutton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             return 0;
         }
+    }
         
         if (player.isAlive && gamestarted) {
 
@@ -1543,7 +1556,7 @@ int main() {
             }
 
             // RED LIGHT: detect any move
-
+            if(worldMode==0){
             if (light == RED_LIGHT && (
                     IsKeyDown(KEY_A) || IsKeyDown(KEY_D) ||
                     IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT) ||
@@ -1555,6 +1568,7 @@ int main() {
                     
                 }
             }
+        }
             if (CheckCollisionRecs(player.rect, damageBlock)) {
                 player.health--;
                 hit_animation(&player_anim);
@@ -1747,15 +1761,18 @@ int main() {
 
 
         //====================================== RESET =======================================//
-            
-        if (IsKeyPressed(KEY_R)) {
+        
+        if (IsKeyPressed(KEY_Y)) {
             // Reset world mode
-            worldMode = 0; //overworld
+             //overworld
             
             
-            // Reset player
+            worldMode = 0;
             player.rect.x = spawnPoint.x;
             player.rect.y = spawnPoint.y;
+            cameraMode = 0; //dynamic camera
+            
+            
             player.gravitySign = 1;
             player.velocityY = 0;
             player.facingDirection = 1;
@@ -1779,8 +1796,64 @@ int main() {
             idle_animation(&player_anim);
 
             // Reset camera target
+            
+
+            //reset double jumps
+            for (int i = 0; i < DOUBLE_JUMPS; i++) {
+                Djumps[i].isCollected = false;
+            }
+            for (int i = 0; i < DASHES; i++) {
+                Dashes[i].isCollected = false;
+            }
+            for( int i=0 ; i<LEVITATION; i++){
+                Levitations[i].isCollected = false;
+            }
+        }
+
+
+        if (IsKeyPressed(KEY_R)) {
+            // Reset world mode
+             //overworld
+            
+            
+            // Reset player
+            brain.brainHealth = 100;
+        brain.isAlive = true;
+            if(worldMode==0){
+            player.rect.x = spawnPoint.x;
+            player.rect.y = spawnPoint.y;
             cameraMode = 0; //dynamic camera
-            camera.target = (Vector2){player.rect.x + player.rect.width / 2, player.rect.y + player.rect.height / 2};
+            
+            }
+            if(worldMode==1){
+                player.rect.x = bossArenaSpawn.x;
+                player.rect.y = bossArenaSpawn.y;
+                cameraMode = 1; //static camera
+            }
+            player.gravitySign = 1;
+            player.velocityY = 0;
+            player.facingDirection = 1;
+            player.isAlive = true;
+            player.health = 100;
+
+            player.isJumping = false;
+
+            player.doubleJumpCount = 0;
+            player.dashCount = 0;
+            player.isDashing = false;
+
+            //reset mob
+            
+            mob.mobHealth = 3;
+            mob.isAlive = true;
+            mob.isActive = false;
+            mob.timer = EYEBALL_MOB_TIMER;
+
+            // Reset animation to idle
+            idle_animation(&player_anim);
+
+            // Reset camera target
+            
 
             //reset double jumps
             for (int i = 0; i < DOUBLE_JUMPS; i++) {
@@ -1799,7 +1872,12 @@ int main() {
                 spawnPoint.y = Checkpoint[i].y;
             }
         }
-
+        
+        
+        
+        
+        
+        
 
   
 
@@ -2123,11 +2201,14 @@ int main() {
         // Menu buttons if game not started
         if (!gamestarted)
         {
-            playButton.x = GetScreenWidth()/2 - playButton.width/2;
+             playButton.x = GetScreenWidth()/2 - playButton.width/2;
             quitbutton.x = GetScreenWidth()/2 - quitbutton.width/2;
+            playButton2.x = GetScreenWidth()/2 - playButton2.width/2;
             DrawRectangleRec(playButton, GRAY);
+            DrawRectangleRec(playButton2, GRAY);
             DrawRectangleRec(quitbutton, GRAY);
-            DrawText("PLAY", playButton.x + 20, playButton.y + 10, 20, BLACK);
+            DrawText("LEVEL 1", playButton.x + 10, playButton.y + 10, 20, BLACK);
+            DrawText("LEVEL 2", playButton2.x + 10, playButton2.y + 10, 20, BLACK);
             DrawText("QUIT", quitbutton.x + 20, quitbutton.y + 10, 20, BLACK);
         }
 
