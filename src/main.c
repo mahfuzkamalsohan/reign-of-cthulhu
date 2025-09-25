@@ -6,6 +6,8 @@
 #define PLAYER_DRAW_SIZE 100
 #define MOB_DRAW_SIZE 350 
 
+#define MAX_DOTS 3
+#define DOT_RADIUS 20
 
 #define GRAVITY 0.5f
 #define JUMP_FORCE -10.0f
@@ -62,6 +64,12 @@ typedef struct Player {
     bool isAttacking; 
     bool isDealingDamage;
 } Player;
+
+typedef struct {
+    Vector2 pos;
+    bool active;
+    float timer;
+} Dot;
 
 typedef struct Mob {
     Rectangle collider;
@@ -298,7 +306,6 @@ int main() {
     InitAudioDevice();                    
     Sound awake_fx = LoadSound("assets/sound/awake_fx.mp3");  
     bool soundPlayed = false; 
-    bool redlightlogic = true;
 
 
     
@@ -421,11 +428,15 @@ int main() {
         .goingUp = false
     };
 
+    Dot dots[MAX_DOTS];
 
-    Vector2 dotPos = {player.rect.x-400,player.rect.y-400};
-    bool dotActive = false;
-    float dotTimer = 0;
+    for (int i = 0; i < MAX_DOTS; i++) {
+    dots[i].active = false;
+    dots[i].timer = 0;
+    dots[i].pos = (Vector2){0, 0};
+}
 
+    
 
 
 
@@ -1174,26 +1185,26 @@ int main() {
                 // Light state logic (comment this if GREEN LIGHT AT ALL TIMES NEEDED)
 
                 //==========================================================================================
-            if(worldMode == 0 && redlightlogic) //if in overworld use RED LIGHT/GREEN LIGHT CYCLE
-            {  
-                if (light == GREEN_LIGHT) {
-                    if (elapsed >= 9.0 && !soundPlayed) {   // Play sound 1 second before red light
-                        PlaySound(awake_fx);
-                        soundPlayed = true;
-                    }
-                    if (elapsed >= 10.0) {
-                        boss_awake_animation(&boss_anim);
-                        light = RED_LIGHT;
-                        state_start_time = GetTime();
-                        soundPlayed = false;   // reset for next cycle
-                    }
-                } else if (light == RED_LIGHT && elapsed >= 5.0) {
-                    boss_sleep_animation(&boss_anim);
-                    light = GREEN_LIGHT;
-                    state_start_time = GetTime();
-                    soundPlayed = false;   // reset for next cycle
-                }
-            }
+            // if(worldMode == 0) //if in overworld use RED LIGHT/GREEN LIGHT CYCLE
+            // {  
+            //     if (light == GREEN_LIGHT) {
+            //         if (elapsed >= 9.0 && !soundPlayed) {   // Play sound 1 second before red light
+            //             PlaySound(awake_fx);
+            //             soundPlayed = true;
+            //         }
+            //         if (elapsed >= 10.0) {
+            //             boss_awake_animation(&boss_anim);
+            //             light = RED_LIGHT;
+            //             state_start_time = GetTime();
+            //             soundPlayed = false;   // reset for next cycle
+            //         }
+            //     } else if (light == RED_LIGHT && elapsed >= 5.0) {
+            //         boss_sleep_animation(&boss_anim);
+            //         light = GREEN_LIGHT;
+            //         state_start_time = GetTime();
+            //         soundPlayed = false;   // reset for next cycle
+            //     }
+            // }
 
 
 
@@ -1385,8 +1396,6 @@ int main() {
             //============================== Dialogue Section ================================//
             if (player.rect.x > 5800 && player.rect.x < 6000) 
                 {
-                    
-                    
                 // Player is in NPC range
                 if (IsKeyPressed(KEY_UP)) {
                     showDialogue = true;
@@ -1669,54 +1678,76 @@ int main() {
 
         //================================== Eye Ball====================//
 
-        // Spawn every 5 seconds
-        dotTimer += GetFrameTime();
-        if (dotTimer >= 10.0f && !dotActive) {
-            dotActive = true;
-            dotTimer = 0;
+        // // Spawn every 5 seconds
+        // dotTimer += GetFrameTime();
+        // if (dotTimer >= 10.0f && !dotActive) {
+        //     dotActive = true;
+        //     dotTimer = 0;
 
-            // Fixed spawn (always from left offscreen)
-            dotPos = (Vector2){player.rect.x-400,player.rect.y-400};
+        //     // Fixed spawn (always from left offscreen)
+        //     dotPos = (Vector2){player.rect.x-400,player.rect.y-400};
 
             
+        // }
+        for (int i = 0; i < MAX_DOTS; i++) {
+    dots[i].timer += GetFrameTime();
+
+    if (dots[i].timer >= 6.0f && !dots[i].active) {
+        float squareHalfSize = 600; // distance from player to edge
+
+// Randomly decide horizontal or vertical edge
+bool horizontal = GetRandomValue(0, 1); // 0=false (vertical), 1=true (horizontal)
+float x, y;
+
+if (horizontal) {
+    y = player.rect.y + (GetRandomValue(0, 1) ? squareHalfSize : -squareHalfSize); // top or bottom
+    x = player.rect.x + GetRandomValue(-squareHalfSize, squareHalfSize);           // random along width
+} else {
+    x = player.rect.x + (GetRandomValue(0, 1) ? squareHalfSize : -squareHalfSize); // left or right
+    y = player.rect.y + GetRandomValue(-squareHalfSize, squareHalfSize);           // random along height
+}
+
+// Assign to dot
+dots[i].pos = (Vector2){x, y};
+dots[i].active = true;
+dots[i].timer = 0;
+    }
+}
+
+        for (int i = 0; i < MAX_DOTS; i++) {
+    if (dots[i].active) {
+        
+        Vector2 playerCenter = {
+            player.rect.x + player.rect.width / 2,
+            player.rect.y + player.rect.height / 2
+        };
+
+        if (dots[i].pos.x < playerCenter.x) dots[i].pos.x += 3.5;
+        if (dots[i].pos.x > playerCenter.x) dots[i].pos.x -= 3.5;
+        if (dots[i].pos.y < playerCenter.y) dots[i].pos.y += 3.5;
+        if (dots[i].pos.y > playerCenter.y) dots[i].pos.y -= 3.5;
+
+      
+        if (CheckCollisionCircles(dots[i].pos, DOT_RADIUS, playerCenter, PLAYER_DRAW_SIZE / 2)) {
+            player.health -= 1;      
+            dots[i].active = false;  // remove the dot
+
+            if (player.health <= 0) {  
+                player.health = 0;      
+                player.isAlive = false; 
+                death_animation(&player_anim);
+            }
         }
 
-        if (dotActive) {
-            // get player center
-            Vector2 playerCenter = {
-            player.rect.x + player.rect.width/2,
-            player.rect.y + player.rect.height/2
-            };
+        
+        Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
 
-            // Move toward player using < >
-            if (dotPos.x < playerCenter.x) dotPos.x += 3;
-            if (dotPos.x > playerCenter.x) dotPos.x -= 3;
-            if (dotPos.y < playerCenter.y) dotPos.y += 3;
-            if (dotPos.y > playerCenter.y) dotPos.y -= 3;
-
-            // Collision with player
-            if (CheckCollisionCircles(dotPos, 10, playerCenter, PLAYER_DRAW_SIZE/2)) {
-                player.health -= 1;      // subtract health
-                    dotActive = false;       // remove the dot
-
-                if (player.health <= 0) {  // check if player died
-                    player.health = 0;      // prevent negative health
-                    player.isAlive = false; // mark player dead
-                    death_animation(&player_anim);
-                }
-            }
-
-
-
-            // Convert mouse position to world coordinates
-            Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
-
-            // Destroy on mouse click
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
-                CheckCollisionPointCircle(mouseWorld, dotPos, 20)) {
-                dotActive = false;
-            }
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
+            CheckCollisionPointCircle(mouseWorld, dots[i].pos, 20)) {
+            dots[i].active = false;  // destroy dot
         }
+    }
+}
         
         
         //==================================== Animation Updates =======================================//
@@ -1816,10 +1847,7 @@ int main() {
             }
         }
 
-        if(IsKeyPressed(KEY_L))
-        {
-            redlightlogic = !redlightlogic;
-        }
+
         if (IsKeyPressed(KEY_R)) {
             // Reset world mode
              //overworld
@@ -2049,22 +2077,36 @@ int main() {
 
 
 
-                // Check collision
-                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
-                    CheckCollisionPointCircle(mouseWorld, dotPos, 20)) {
-                    dotActive = false;
-                }
+                // // Check collision
+                // if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
+                //     CheckCollisionPointCircle(mouseWorld, dotPos, 20)) {
+                //     dotActive = false;
+                // }
 
                 //Draw Eyeball Projectile
-                if(dotActive)
-                {
-                    DrawTexturePro(
-                        eyeball,
-                        (Rectangle){0, 0, eyeball.width, eyeball.height},
-                        (Rectangle){dotPos.x - 10, dotPos.y - 10, 20, 20},
-                        (Vector2){0, 0}, 0.0f, WHITE
-                    );
-                }    
+                // if(dotActive)
+                // {
+                //     DrawTexturePro(
+                //         eyeball,
+                //         (Rectangle){0, 0, eyeball.width, eyeball.height},
+                //         (Rectangle){dotPos.x - 10, dotPos.y - 10, 20, 20},
+                //         (Vector2){0, 0}, 0.0f, WHITE
+                //     );
+                // }    
+
+                for (int i = 0; i < MAX_DOTS; i++) {
+    if (dots[i].active) {
+        DrawTexturePro(
+            eyeball,
+            (Rectangle){0, 0, eyeball.width, eyeball.height},
+            (Rectangle){dots[i].pos.x - DOT_RADIUS, dots[i].pos.y - DOT_RADIUS, DOT_RADIUS * 2, DOT_RADIUS * 2},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE
+        );
+    }
+}
+
         
 
       
