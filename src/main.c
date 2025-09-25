@@ -2119,7 +2119,7 @@ Vector2 mouseWorld = GetScreenToWorld2D(mouseVirtual, camera);
                 DrawTexturePro(
                     teleporter_texture,
                     (Rectangle){0, 0, teleporter_texture.width, teleporter_texture.height},
-                    (Rectangle){4700, 60-60, 64, 64}, //change this once sadnan gives coords
+                    (Rectangle){14400, 170-60, 64, 64}, //change this once sadnan gives coords
                     (Vector2){0, 0}, 0.0f, WHITE
                 );
 
