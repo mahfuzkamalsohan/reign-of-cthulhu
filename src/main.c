@@ -990,7 +990,7 @@ int main() {
 
 
     bool showDialogue = false;
-    const char* dialogueText1 = "Hello, adventurer! If you wish to slay the beast that conquers this land, you must use this ability i am giving you. Press the 'E' key to use the ability. Good luck! You need it! Ohohoho!";
+    const char* dialogueText1 = "Hello, adventurer! \nyou must use this ability to slay the beast. \nI stole this spell from the temple of SHOGGOTH. \nPress the 'E' key to use the ability. \nGood luck! You need it! Ohohoho!";
     const char* dialogueText2 = "Go now, and may fortune favor you!";
     Rectangle dialogueRange = { 5800, 180, 128, 192 };  // Same as destRec from earlier
 
@@ -1167,34 +1167,37 @@ int main() {
             }
 
 
-            if(worldMode == 0) //if in overworld use RED LIGHT/GREEN LIGHT CYCLE
-            {
+           
 
-            
+                
                 // Light state logic (comment this if GREEN LIGHT AT ALL TIMES NEEDED)
-                if (light == GREEN_LIGHT) {
-                    if (elapsed >= 9.0 && !soundPlayed) {   // Play sound 1 second before red light
-                        PlaySound(awake_fx);
-                        soundPlayed = true;
-                    }
-                    if (elapsed >= 10.0) {
-                        boss_awake_animation(&boss_anim);
-                        light = RED_LIGHT;
-                        state_start_time = GetTime();
-                        soundPlayed = false;   // reset for next cycle
-                    }
-                } else if (light == RED_LIGHT && elapsed >= 5.0) {
-                    boss_sleep_animation(&boss_anim);
-                    light = GREEN_LIGHT;
-                    state_start_time = GetTime();
-                    soundPlayed = false;   // reset for next cycle
-                }
-            }
+
+                //==========================================================================================
+            // if(worldMode == 0) //if in overworld use RED LIGHT/GREEN LIGHT CYCLE
+            // {  
+            //     if (light == GREEN_LIGHT) {
+            //         if (elapsed >= 9.0 && !soundPlayed) {   // Play sound 1 second before red light
+            //             PlaySound(awake_fx);
+            //             soundPlayed = true;
+            //         }
+            //         if (elapsed >= 10.0) {
+            //             boss_awake_animation(&boss_anim);
+            //             light = RED_LIGHT;
+            //             state_start_time = GetTime();
+            //             soundPlayed = false;   // reset for next cycle
+            //         }
+            //     } else if (light == RED_LIGHT && elapsed >= 5.0) {
+            //         boss_sleep_animation(&boss_anim);
+            //         light = GREEN_LIGHT;
+            //         state_start_time = GetTime();
+            //         soundPlayed = false;   // reset for next cycle
+            //     }
+            // }
 
 
 
 
-
+            //==========================================================================================
 
 
             
@@ -2024,7 +2027,25 @@ int main() {
                     (Rectangle){5800+100, 150-80, 64, 64},
                     (Vector2){0, 0}, 0.0f, WHITE
                 );
+                // Convert mouse to virtual coordinates first
+                Vector2 mouseScreen = GetMousePosition();
+                float scale = (float)GetScreenHeight() / virtualHeight;
+                int scaledWidth = (int)(virtualWidth * scale);
+                int offsetX = (GetScreenWidth() - scaledWidth) / 2;
 
+                Vector2 mouseVirtual = {
+                    (mouseScreen.x - offsetX) / scale,
+                    mouseScreen.y / scale
+                };
+
+                // Convert to world coordinates with camera
+                Vector2 mouseWorld = GetScreenToWorld2D(mouseVirtual, camera);
+
+                // Check collision
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
+                    CheckCollisionPointCircle(mouseWorld, dotPos, 20)) {
+                    dotActive = false;
+                }
 
                 //Draw Eyeball Projectile
                 if(dotActive)
@@ -2172,14 +2193,14 @@ int main() {
         }
         if (showDialogue)
         {
-                Rectangle dialogueBox = { GetScreenWidth()/2 - 300, GetScreenHeight()/2 + 100, 600, 100 }; // bottom of screen
+                Rectangle dialogueBox = { GetScreenWidth()/2 - 300, GetScreenHeight()/2 + 100, 800, 200 }; // bottom of screen
                 DrawRectangleRec(dialogueBox, BLACK);
                 DrawRectangleLines(dialogueBox.x, dialogueBox.y, dialogueBox.width, dialogueBox.height, WHITE);
-                if(player.laserAcquired)
+                if(player.laserAcquired == true)
                 {
                     DrawText(dialogueText1, dialogueBox.x + 10, dialogueBox.y + 10, 20, WHITE);
                 }
-                else
+                else if(player.laserAcquired == false)
                 {
                     DrawText(dialogueText2, dialogueBox.x + 10, dialogueBox.y + 10, 20, WHITE);
                 }
