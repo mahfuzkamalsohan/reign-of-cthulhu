@@ -2444,7 +2444,7 @@ if (distance > 1200.0f) {
                 DrawTexturePro(
                     wizard_texture,
                     (Rectangle){0, 0, wizard_texture.width, wizard_texture.height},
-                    (Rectangle){5800+100, 150-80, 64, 64},
+                    (Rectangle){5800+130, 150-80, 64, 64},
                     (Vector2){0, 0}, 0.0f, WHITE
                 );
                 // Full Screen EYEBALL fix
