@@ -324,6 +324,7 @@ int main() {
     const int TILE_SIZE = 32;  //each tile is 32x32 px
 
     Texture2D tileset = LoadTexture("assets/map/tileset.png");
+    Texture2D phase_texture = LoadTexture("assets/powerups/phase.png");
     Texture2D damage_block_texture = LoadTexture("assets/map/damage_block.png");
     Texture2D teleporter_texture = LoadTexture("assets/map/teleporter.png");
     Texture2D wizard_texture = LoadTexture("assets/npc/wizard.png");
@@ -2539,7 +2540,11 @@ if (distance > 1200.0f) {
 
                 for(int i = 0; i< NOCLIP; i++){
                     if(!Noclips[i].isCollected){
-                         DrawRectangleRec(Noclips[i].rect, RED);
+                         //DrawRectangleRec(Noclips[i].rect, RED);
+                         DrawTexturePro(phase_texture,
+                                    (Rectangle){0, 0, phase_texture.width, phase_texture.height},
+                                    Noclips[i].rect,
+                                    (Vector2){0, 0}, 0.0f, WHITE);
                     }
                 }
 
